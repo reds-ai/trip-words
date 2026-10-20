@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>南极环线单词本</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Charis+SIL:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+SC:wght@600;900&display=swap">
+<style>
+/* Layout: 一条从北纬到南极的纬度轨道（章节）+ 下方单列学习区。色彩取自行程单的纬度带：金=热带，石青=中纬，冰蓝=极地 */
+:root{
+  --bg:#EEF2F3; --surface:#FFFFFF; --sunk:#E3EAEC; --ink:#10212E; --muted:#58697A; --line:#D3DDE1;
+  --ice:#1F6F99; --ice-soft:#DCEEF6; --gold:#A77A1E; --gold-soft:#F5EBD4; --slate:#4B6476; --polar:#3B9CC9;
+  --good:#2C7A52; --good-soft:#DDF0E5; --bad:#B4483A; --bad-soft:#F6E1DD;
+  --f-word:"Charis SIL", "Charis", Georgia, "Times New Roman", serif;
+  --f-zh:"Noto Serif SC", "Songti SC", "STSong", serif;
+  --f-body:-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A141C; --surface:#111F2A; --sunk:#0D1922; --ink:#E4EDF2; --muted:#93A7B5; --line:#223543;
+  --ice:#7CC3E6; --ice-soft:#16303F; --gold:#E2B65C; --gold-soft:#2E2715; --slate:#9DB4C4; --polar:#8DD3F2;
+  --good:#6CC797; --good-soft:#14301F; --bad:#EE8B7C; --bad-soft:#3A1E1A; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0A141C; --surface:#111F2A; --sunk:#0D1922; --ink:#E4EDF2; --muted:#93A7B5; --line:#223543;
+  --ice:#7CC3E6; --ice-soft:#16303F; --gold:#E2B65C; --gold-soft:#2E2715; --slate:#9DB4C4; --polar:#8DD3F2;
+  --good:#6CC797; --good-soft:#14301F; --bad:#EE8B7C; --bad-soft:#3A1E1A; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ice);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* 头部 */
+header.top{padding-block:22px 6px}
+.route{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.04em;display:flex;flex-wrap:wrap;gap:4px 10px}
+.route b{color:var(--ice);font-weight:500}
+h1{font-family:var(--f-zh);font-weight:900;font-size:clamp(28px,6vw,40px);line-height:1.15;margin:8px 0 4px;letter-spacing:.02em;text-wrap:balance}
+.status{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:10px}
+.today{font-size:14px}
+.today strong{font-family:var(--f-zh);font-weight:600}
+.meter{flex:1;min-width:180px;display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.bar{flex:1;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--good);border-radius:3px;transition:width .3s}
+.sync{font-size:12px;color:var(--muted)}
+
+/* 纬度轨道 */
+.rail-wrap{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px 8px;border-bottom:1px solid var(--line)}
+.rail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;scroll-snap-type:x proximity}
+.chip{flex:none;scroll-snap-align:start;position:relative;display:grid;gap:1px;text-align:left;min-width:118px;padding:8px 12px 8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer}
+.chip::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 3px 3px 0;background:var(--band,var(--muted))}
+.chip[data-band="trop"]{--band:var(--gold)} .chip[data-band="mid"]{--band:var(--slate)} .chip[data-band="polar"]{--band:var(--polar)} .chip[data-band="all"]{--band:var(--line)}
+.chip .n{font-weight:600;font-size:14px;white-space:nowrap}
+.chip .d{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.chip .p{font-family:var(--f-mono);font-size:11px;color:var(--good)}
+.chip[aria-pressed="true"]{border-color:var(--ice);background:var(--ice-soft)}
+.chip .badge{position:absolute;top:-7px;right:8px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px;background:var(--gold);color:var(--surface)}
+.tabs{display:flex;gap:4px;margin-top:10px;background:var(--sunk);border-radius:10px;padding:3px;width:max-content;max-width:100%}
+.tabs button{border:0;background:transparent;padding:6px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+main{padding-block:16px 60px}
+.ch-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:12px}
+.ch-head h2{font-family:var(--f-zh);font-weight:600;font-size:22px;margin:0}
+.ch-head .en{font-family:var(--f-word);font-style:italic;color:var(--muted);font-size:16px}
+.ch-head .meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-left:auto}
+
+/* 工具条 */
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.search{flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font:inherit;color:var(--ink)}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+
+/* 单词卡 */
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:820px){.grid{grid-template-columns:1fr 1fr}}
+.card{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px 12px;display:grid;gap:6px;align-content:start}
+.card.done{background:color-mix(in srgb,var(--surface) 70%,var(--good-soft))}
+.w-row{display:flex;align-items:flex-start;gap:8px}
+.word{font-family:var(--f-word);font-weight:700;font-size:22px;line-height:1.2;overflow-wrap:anywhere}
+.tag{flex:none;margin-top:4px;font-size:11px;padding:1px 7px;border-radius:6px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.tag.loc{background:var(--gold-soft);color:var(--gold)}
+.mark{margin-left:auto;flex:none;border:1px solid var(--line);background:transparent;border-radius:8px;padding:3px 9px;font-size:12px;cursor:pointer;color:var(--muted);white-space:nowrap}
+.mark[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:var(--surface)}
+.ipa-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ipa{font-family:var(--f-word);font-size:17px;color:var(--ice)}
+.say{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ice);padding:0}
+.say svg{width:15px;height:15px}
+.say.slow{width:auto;border-radius:15px;padding:0 9px;font-size:12px;font-weight:600}
+.zh{font-size:16px;font-weight:600}
+.ex{font-family:var(--f-word);font-size:16px;line-height:1.45;display:flex;gap:6px;align-items:flex-start}
+.ex mark{background:var(--ice-soft);color:inherit;border-radius:3px;padding:0 2px}
+.ex .say{width:26px;height:26px;flex:none;margin-top:1px}
+.exzh{color:var(--muted);font-size:14px}
+.tip{font-size:13px;color:var(--ink);background:var(--gold-soft);border-radius:8px;padding:6px 10px}
+.tip b{color:var(--gold);margin-right:6px;font-weight:600}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+
+/* 闪卡 */
+.stage{max-width:560px;margin:0 auto;display:grid;gap:14px}
+.opts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.flash{min-height:300px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px 22px;display:grid;place-items:center;text-align:center;cursor:pointer;position:relative;user-select:none}
+.flash .count{position:absolute;top:12px;left:16px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.flash .hint{position:absolute;bottom:12px;left:0;right:0;font-size:12px;color:var(--muted)}
+.flash .big{font-family:var(--f-word);font-weight:700;font-size:clamp(28px,7vw,40px);line-height:1.15;overflow-wrap:anywhere}
+.flash .bigzh{font-family:var(--f-zh);font-weight:600;font-size:clamp(24px,6vw,32px)}
+.flash .inner{display:grid;gap:10px;justify-items:center;max-width:100%}
+.flash .ex{justify-content:center;text-align:left}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:13px;font-weight:600;font-size:15px;cursor:pointer}
+.btn.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.btn.yes{background:var(--good);border-color:var(--good);color:var(--surface)}
+.btn.primary{background:var(--ice);border-color:var(--ice);color:var(--surface)}
+.kbd{font-size:12px;color:var(--muted);text-align:center}
+
+/* 测验 */
+.q{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 20px;display:grid;gap:12px;text-align:center;justify-items:center}
+.q .count{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.choices{display:grid;gap:8px}
+.choice{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;font-size:15px;cursor:pointer}
+.choice.right{background:var(--good-soft);border-color:var(--good);color:var(--good);font-weight:600}
+.choice.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.choice:disabled{cursor:default}
+.feedback{background:var(--sunk);border-radius:12px;padding:12px 14px;display:grid;gap:4px}
+.result{text-align:center;display:grid;gap:8px;justify-items:center}
+.result .score{font-family:var(--f-word);font-weight:700;font-size:56px;line-height:1}
+.missed{width:100%;text-align:left;display:grid;gap:6px}
+.missed div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.missed .word{font-size:17px}
+footer{font-size:12px;color:var(--muted);padding-block:0 30px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="route"><span><b>HKG</b> 22°18′N</span><span>→ LAX → CUZ → EZE</span><span>→ <b>64°49′S</b> 南极半岛</span><span>→ GIG → JFK → YYZ → <b>HKG</b></span></div>
+    <h1>南极环线单词本</h1>
+    <div class="status">
+      <div class="today" id="today"></div>
+      <div class="meter"><span id="mcount">0 / 0</span><div class="bar"><i id="mbar" style="width:0"></i></div></div>
+      <span class="sync" id="sync"></span>
+    </div>
+  </header>
+</div>
+<div class="rail-wrap">
+  <div class="wrap">
+    <div class="rail" id="rail" role="toolbar" aria-label="按行程选择场景"></div>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-mode="list" aria-selected="true" id="tab-list">单词表</button>
+      <button role="tab" data-mode="flash" aria-selected="false" id="tab-flash">闪卡</button>
+      <button role="tab" data-mode="quiz" aria-selected="false" id="tab-quiz">测验</button>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <main id="main"></main>
+  <footer>音标为美式发音；西语、葡语、法语地名按当地读法标注，播放时也用当地语音。发音使用设备自带的语音引擎，iPhone 请关闭静音键。</footer>
+</div>
+
+<script>
+// [单词, 音标, 中文, 例句, 例句翻译, 记忆提示, 类型]  类型: n=专有名词, n:es / n:pt / n:fr = 按当地语言发音
+const CHAPTERS = [
+{ id:"air", zh:"机场与航班", en:"Airports & Flights", when:"全程 · 13段航班", band:"all", range:null, words:[
+["check in","/ˌtʃek ˈɪn/","办理值机","I already checked in online for flight JA7063.","我已经在网上办好 JA7063 的值机了。","JetSMART 在机场柜台值机要另收费，记得提前 check in online。"],
+["boarding pass","/ˈbɔːrdɪŋ ˌpæs/","登机牌","Could I get a printed boarding pass, please?","能给我一张纸质登机牌吗？"],
+["carry-on","/ˈkæri ˌɑːn/","随身行李（登机箱）","Is this backpack okay as a carry-on?","这个背包可以当随身行李吗？"],
+["personal item","/ˈpɜːrsənəl ˈaɪtəm/","个人小件（放座位下）","The basic fare only includes one personal item under the seat.","基础票价只含一件放在座位下的小包。","廉航基础票只含这个，登机箱也要另买。"],
+["checked bag","/ˌtʃekt ˈbæɡ/","托运行李","My ticket includes one checked bag.","我的票含一件托运行李。"],
+["baggage allowance","/ˈbæɡɪdʒ əˈlaʊəns/","行李额度","What's the baggage allowance on my fare?","我这张票的行李额度是多少？"],
+["overweight","/ˌoʊvərˈweɪt/","超重的","Your bag is two kilos overweight.","您的行李超重两公斤。"],
+["excess baggage fee","/ˈekses ˈbæɡɪdʒ ˌfiː/","超额行李费","It's cheaper to pay the excess baggage fee online.","超额行李费在网上付更便宜。"],
+["layover","/ˈleɪˌoʊvər/","中转停留","I have a six-hour layover in Lima.","我在利马有六小时的中转。"],
+["connecting flight","/kəˈnektɪŋ ˌflaɪt/","转机航班","I'm on a connecting flight to Buenos Aires tonight.","我今晚要转机去布宜诺斯艾利斯。"],
+["separate tickets","/ˈsepərət ˈtɪkɪts/","分开出的票","These are two separate tickets, so the airline won't protect my connection.","这是两张分开的票，所以航空公司不保障我的衔接。","10/28 H25008 和 LA2375 就是这种情况。"],
+["check through","/ˌtʃek ˈθruː/","（行李）直挂到终点","Can you check my bag through to Buenos Aires?","行李能直挂到布宜诺斯艾利斯吗？"],
+["delayed","/dɪˈleɪd/","延误的","Our flight is delayed by two hours.","我们的航班延误了两小时。"],
+["cancelled","/ˈkænsəld/","被取消的","My flight was cancelled. What are my options?","我的航班被取消了，我有什么选择？"],
+["rebook","/ˌriːˈbʊk/","改签，重新预订","Can you rebook me on the next available flight?","能帮我改签到下一班有位子的航班吗？"],
+["next available flight","/nekst əˈveɪləbəl ˈflaɪt/","下一班有座位的航班","When is the next available flight to Lima?","下一班去利马有座位的航班是几点？"],
+["red-eye","/ˈred ˌaɪ/","红眼航班","I'm taking the red-eye from Rio to New York.","我坐红眼航班从里约飞纽约。","飞一整夜，下飞机眼睛是红的。"],
+["gate","/ɡeɪt/","登机口","Has the gate changed?","登机口换了吗？"],
+["boarding group","/ˈbɔːrdɪŋ ˌɡruːp/","登机分组","We are now boarding group three.","现在请第三组登机。"],
+["final call","/ˈfaɪnəl ˌkɔːl/","最后登机广播","This is the final call for flight AA974 to New York.","飞往纽约的 AA974 航班最后一次登机广播。"],
+["aisle seat","/ˈaɪl ˌsiːt/","靠过道座位","I'd prefer an aisle seat, please.","我想要靠过道的座位。","aisle 里的 s 不发音，读「爱欧」。"],
+["window seat","/ˈwɪndoʊ ˌsiːt/","靠窗座位","Is there a window seat on the left side?","左边还有靠窗的座位吗？"],
+["overhead bin","/ˌoʊvərhed ˈbɪn/","头顶行李舱","Please put your bag in the overhead bin.","请把包放进头顶行李舱。"],
+["baggage claim","/ˈbæɡɪdʒ ˌkleɪm/","行李提取处","Where is baggage claim for flight CX829?","CX829 的行李在哪里提取？"],
+["carousel","/ˌkærəˈsel/","行李转盘","Your bags will arrive on carousel five.","您的行李在 5 号转盘。"],
+["immigration","/ˌɪmɪˈɡreɪʃən/","入境检查","Follow the signs to immigration.","跟着指示牌去入境检查。"],
+["customs","/ˈkʌstəmz/","海关","We have to go through customs after baggage claim.","取完行李还要过海关。"],
+["declare","/dɪˈklɛr/","申报","I have some food to declare. It's just packaged cookies.","我有食品要申报，只是包装好的饼干。","带阿法豪饼进美国、加拿大时如实申报。"],
+["purpose of your visit","/ˈpɜːrpəs əv jʊr ˈvɪzɪt/","入境目的","What's the purpose of your visit? Tourism, I'm staying for four days.","入境目的是什么？旅游，待四天。"],
+["onward ticket","/ˈɑːnwərd ˈtɪkɪt/","续程/离境机票","Do you have an onward ticket? Yes, here's my flight to Toronto.","有离境机票吗？有，这是我去多伦多的航班。","秘鲁、阿根廷、巴西入境可能会问。"],
+["transit","/ˈtrænzɪt/","过境，中转","I'm in transit and leaving Korea tomorrow.","我是过境，明天就离开韩国。"],
+["jet lag","/ˈdʒet ˌlæɡ/","时差反应","I'm still fighting jet lag after the flight from Korea.","从韩国飞过来，我还在倒时差。"],
+["International Date Line","/ˌɪntərˈnæʃənəl ˈdeɪt ˌlaɪn/","国际日期变更线","We cross the International Date Line, so we land on the same day.","我们跨过国际日期变更线，所以同一天落地。","10/22 仁川 13:00 起飞，洛杉矶同日 08:20 到。","n"],
+["terminal","/ˈtɜːrmɪnəl/","航站楼","Air Canada leaves from Terminal 1, Cathay Pacific from Terminal 3.","加航从 1 号航站楼出发，国泰从 3 号。"],
+["Tom Bradley International Terminal","/ˌtɑːm ˈbrædli ˌɪntərˈnæʃənəl ˈtɜːrmɪnəl/","洛杉矶机场国际航站楼（TBIT）","Air Premia arrives at the Tom Bradley International Terminal.","Air Premia 降落在汤姆·布拉德利国际航站楼。","简称 TBIT，读作 T-B-I-T。","n"],
+["Ezeiza","/eˈsejsa/","埃塞萨机场（布宜国际机场）","Take me to Ezeiza Airport, please.","请送我去埃塞萨机场。","布宜人读「诶-赛-萨」，美国人常读 eh-ZAY-zuh，都听得懂。","n:es"],
+["Galeão","/ɡaliˈɐ̃w̃/","里约加利昂机场","Our flight to New York leaves from Galeão, Terminal 2.","我们去纽约的航班从加利昂机场 2 号航站楼出发。","葡语 ão 是鼻音，像「嗷」带鼻腔。","n:pt"],
+["Newark","/ˈnuːərk/","纽瓦克（新泽西机场）","We fly to Toronto from Newark, not LaGuardia.","我们从纽瓦克飞多伦多，不是拉瓜迪亚。","读「NOO-erk」，不是 new-ARK。","n"],
+["Pearson","/ˈpɪrsən/","多伦多皮尔逊机场","We land at Toronto Pearson at 8:46 p.m.","我们晚上 8:46 降落在多伦多皮尔逊机场。","","n"]
+]},
+{ id:"hotel", zh:"酒店入住", en:"Hotels", when:"全程 · 13家酒店", band:"all", range:null, words:[
+["reservation","/ˌrezərˈveɪʃən/","预订","I have a reservation under the name Wang.","我用王这个名字订了房。"],
+["confirmation number","/ˌkɑːnfərˈmeɪʃən ˈnʌmbər/","确认号","Here's my confirmation number from Trip.com.","这是我在携程的确认号。"],
+["late arrival","/ˈleɪt əˈraɪvəl/","晚到","I'm a late arrival. I'll get there around 4:30 a.m.","我会晚到，大约凌晨 4:30 到。","10/29 凌晨到 El Conquistador 时用。"],
+["hold the room","/ˌhoʊld ðə ˈruːm/","保留房间","Please hold the room for me. My flight lands at 3 a.m.","请帮我保留房间，我的航班凌晨 3 点落地。"],
+["no-show","/ˈnoʊ ˌʃoʊ/","（订了却）未到店","Please don't mark me as a no-show.","请不要把我当成未到店处理。"],
+["front desk","/ˌfrʌnt ˈdesk/","前台","Please leave the key at the front desk.","请把钥匙留在前台。"],
+["store my luggage","/ˌstɔːr maɪ ˈlʌɡɪdʒ/","寄存行李","Could you store my luggage until 4 p.m.?","能帮我把行李寄存到下午 4 点吗？","这趟有七天需要寄存，这句最常用。"],
+["luggage tag","/ˈlʌɡɪdʒ ˌtæɡ/","行李牌","Here's your luggage tag. Show it when you pick up your bags.","这是您的行李牌，取行李时出示。"],
+["early check-in","/ˈɜːrli ˈtʃek ɪn/","提前入住","Is early check-in possible? I just got off a red-eye.","能提前入住吗？我刚下红眼航班。"],
+["late checkout","/ˌleɪt ˈtʃekaʊt/","延迟退房","Could I have a late checkout, around noon?","能延迟到中午左右退房吗？"],
+["non-refundable","/ˌnɑːn rɪˈfʌndəbəl/","不可退款的","This rate is non-refundable.","这个房价不可退款。"],
+["free cancellation","/ˌfriː ˌkænsəˈleɪʃən/","免费取消","Free cancellation is available until 4 p.m. on November 16.","11 月 16 日下午 4 点前可以免费取消。"],
+["breakfast included","/ˈbrekfəst ɪnˈkluːdɪd/","含早餐","Is breakfast included? What time does it start?","含早餐吗？几点开始？"],
+["tourist tax","/ˈtʊrɪst ˌtæks/","旅游税","The tourist tax is paid at the hotel, in pesos or by card.","旅游税在酒店付，比索或刷卡都行。"],
+["pay at the property","/ˌpeɪ æt ðə ˈprɑːpərti/","到店付款","There's a small fee to pay at the property.","有一笔小额费用要到店支付。"],
+["airport shuttle","/ˈɛrpɔːrt ˈʃʌtəl/","机场接驳车","Do you have a free airport shuttle from Pearson?","你们有从皮尔逊机场过来的免费接驳车吗？"],
+["wake-up call","/ˈweɪk ʌp ˌkɔːl/","叫醒服务","Could I get a wake-up call at 5 a.m.?","早上 5 点能叫醒我吗？"],
+["Wi-Fi password","/ˈwaɪ faɪ ˈpæswɜːrd/","无线网密码","What's the Wi-Fi password?","无线网密码是多少？"],
+["room with a view","/ˌruːm wɪð ə ˈvjuː/","景观房","We booked a room with a view of the falls.","我们订了能看瀑布的景观房。"],
+["deposit","/dɪˈpɑːzɪt/","押金","Is there a security deposit on the card?","信用卡上要冻结押金吗？"]
+]},
+{ id:"la", zh:"洛杉矶", en:"Los Angeles", when:"10/22 – 10/24", band:"mid", range:["2026-10-22","2026-10-24"], lat:"34°N", words:[
+["Hollywood Walk of Fame","/ˈhɑːliwʊd ˌwɔːk əv ˈfeɪm/","好莱坞星光大道","Our motel is a short walk from the Hollywood Walk of Fame.","我们的汽车旅馆走几步就到星光大道。","","n"],
+["TCL Chinese Theatre","/ˌtiː siː ˈel tʃaɪˈniːz ˈθiːətər/","中国剧院","Look for the handprints in front of the TCL Chinese Theatre.","去中国剧院门口找明星手印。","","n"],
+["Santa Monica Pier","/ˌsæntə ˈmɑːnɪkə ˈpɪr/","圣莫尼卡码头","Route 66 ends at the Santa Monica Pier.","66 号公路的终点就在圣莫尼卡码头。","","n"],
+["Venice Beach","/ˈvenɪs ˌbiːtʃ/","威尼斯海滩","Venice Beach is famous for skaters and street performers.","威尼斯海滩以滑板客和街头艺人出名。","","n"],
+["Griffith Observatory","/ˈɡrɪfɪθ əbˈzɜːrvətɔːri/","格里菲斯天文台","Let's watch the city lights from Griffith Observatory.","我们去格里菲斯天文台看城市亮灯吧。","observatory 重音在第二音节 -ZER-。","n"],
+["Getty Center","/ˈɡeti ˈsentər/","盖蒂中心","Admission to the Getty Center is free.","盖蒂中心免门票。","","n"],
+["admission","/ədˈmɪʃən/","入场（费）","General admission starts at 2 p.m.","普通入场下午 2 点开始。"],
+["Universal Studios Hollywood","/ˌjuːnɪˈvɜːrsəl ˈstuːdioʊz ˈhɑːliwʊd/","好莱坞环球影城","Take the B Line to Universal City for Universal Studios Hollywood.","坐 B 线到 Universal City 站就是环球影城。","","n"],
+["Halloween Horror Nights","/ˌhæloʊˈiːn ˈhɔːrər ˌnaɪts/","万圣节惊魂夜","Halloween Horror Nights starts after 7 p.m.","万圣节惊魂夜晚上 7 点后开始。","","n"],
+["haunted house","/ˈhɔːntɪd ˌhaʊs/","鬼屋","There are eight haunted houses this year.","今年有八个鬼屋。"],
+["scare zone","/ˈskɛr ˌzoʊn/","（街头）惊吓区","Actors jump out at you in the scare zones.","惊吓区里演员会突然跳出来。"],
+["Terror Tram","/ˈterər ˌtræm/","恐怖电车","The Terror Tram goes through the backlot at night.","恐怖电车晚上开进外景场地。","","n"],
+["wait time","/ˈweɪt ˌtaɪm/","排队等候时间","The wait time for Mario Kart is ninety minutes.","马里奥赛车要排 90 分钟。"],
+["single rider line","/ˈsɪŋɡəl ˈraɪdər ˌlaɪn/","单人通道","Is there a single rider line? It's much faster.","有单人通道吗？快很多。","一个人玩时问这句，能省大量排队时间。"],
+["Super Nintendo World","/ˈsuːpər nɪnˈtendoʊ ˈwɜːrld/","超级任天堂世界","Head to Super Nintendo World first, before the lines get long.","先冲任天堂世界，趁队还不长。","","n"],
+["Warner Bros. Studio Tour","/ˈwɔːrnər ˈbrʌðərz ˈstuːdioʊ ˌtʊr/","华纳兄弟片场游","Our Warner Bros. Studio Tour starts at 1 p.m. in Burbank.","我们的华纳片场游下午 1 点在伯班克开始。","Bros. 要读成 Brothers。","n"],
+["Burbank","/ˈbɜːrbæŋk/","伯班克","It's about twenty-five minutes by car to Burbank.","开车去伯班克大约 25 分钟。","","n"],
+["backlot","/ˈbækˌlɑːt/","外景场地","The tram takes you through the backlot.","游览车带你穿过外景场地。"],
+["soundstage","/ˈsaʊndˌsteɪdʒ/","摄影棚","Friends was filmed on this soundstage.","《老友记》就是在这个摄影棚拍的。"],
+["prop","/prɑːp/","道具","Please don't touch the props.","请不要触碰道具。"],
+["Central Perk","/ˈsentrəl ˈpɜːrk/","中央公园咖啡馆（老友记）","You can sit on the orange couch at Central Perk.","在中央公园咖啡馆可以坐那张橙色沙发。","","n"],
+["TAP card","/ˈtæp ˌkɑːrd/","洛杉矶交通卡","You can also tap your phone instead of a TAP card.","也可以用手机代替 TAP 卡刷。"],
+["rideshare pickup","/ˈraɪdʃɛr ˈpɪkʌp/","网约车上车点","Rideshare pickup at LAX is at the LAX-it lot.","洛杉矶机场的网约车在 LAX-it 停车场上车。","LAX-it 读 「LA-zit」。"]
+]},
+{ id:"peru", zh:"秘鲁 · 高原与马丘比丘", en:"Peru", when:"10/25 – 10/28", band:"trop", range:["2026-10-25","2026-10-28"], lat:"13°S", words:[
+["altitude sickness","/ˈæltɪtuːd ˈsɪknəs/","高原反应","Cusco is at 3,400 meters, so altitude sickness is common.","库斯科海拔 3400 米，高反很常见。"],
+["acclimatize","/əˈklaɪmətaɪz/","适应（环境、海拔）","Take it easy on the first day to acclimatize.","第一天放松些，好适应海拔。"],
+["short of breath","/ˌʃɔːrt əv ˈbreθ/","气短，喘不过气","I feel a little short of breath on the stairs.","爬楼梯有点喘不上气。"],
+["coca tea","/ˈkoʊkə ˌtiː/","古柯茶","The hotel offers free coca tea in the lobby.","酒店大堂有免费古柯茶。","只能在当地喝，别带进美国。"],
+["soroche","/soˈɾotʃe/","高原反应（秘鲁叫法）","The guide asked if anyone had soroche.","导游问有没有人高反。","","n:es"],
+["oxygen","/ˈɑːksɪdʒən/","氧气","Does the hotel have oxygen if I need it?","酒店有氧气吗，万一需要的话？"],
+["Cusco","/ˈkuːskoʊ/","库斯科","Cusco was the capital of the Inca Empire.","库斯科曾是印加帝国的首都。","","n"],
+["Sacred Valley","/ˈseɪkrɪd ˈvæli/","圣谷","Our tour of the Sacred Valley leaves at 6 a.m.","我们的圣谷团早上 6 点出发。","","n"],
+["terraces","/ˈterəsɪz/","梯田","The circular terraces at Moray were an Inca farming lab.","莫瑞的环形梯田是印加人的农业实验田。"],
+["Moray","/moˈɾaj/","莫瑞（环形梯田）","Moray looks like a giant green amphitheater.","莫瑞看起来像一座巨大的绿色圆形剧场。","","n:es"],
+["salt pans","/ˈsɔːlt ˌpænz/","盐田","The salt pans of Maras have been used for centuries.","马拉斯盐田已经用了几百年。"],
+["Maras","/ˈmaɾas/","马拉斯","You can buy pink salt at Maras.","在马拉斯可以买粉盐。","","n:es"],
+["Ollantaytambo","/ojantajˈtambo/","奥扬泰坦博","We take the train to Machu Picchu from Ollantaytambo.","我们从奥扬泰坦博坐火车去马丘比丘。","拆开记：oyan-tie-TAM-bo。","n:es"],
+["Aguas Calientes","/ˈaɣwas kaˈljentes/","热水镇","Aguas Calientes means hot water in Spanish.","Aguas Calientes 在西语里就是「热水」。","","n:es"],
+["Machu Picchu","/ˌmɑːtʃuː ˈpiːktʃuː/","马丘比丘","Machu Picchu means old mountain in Quechua.","Machu Picchu 在克丘亚语里是「老山」的意思。","Picchu 读「PEEK-choo」，cc 发 k 音。","n"],
+["Huayna Picchu","/ˌwaɪnə ˈpiːktʃuː/","华纳比丘山","The trail up Huayna Picchu is steep and exposed.","上华纳比丘的路又陡又没有遮挡。","Huayna 的 hu 读 w：WINE-uh。","n"],
+["circuit","/ˈsɜːrkɪt/","（参观）线路","My ticket is for Circuit 3A at 10 a.m.","我的票是上午 10 点的 3A 线。","ui 不发音，读「瑟-kit」。"],
+["timed entry","/ˌtaɪmd ˈentri/","分时段入场","It's a timed entry, so we can't be late.","这是分时段入场，不能迟到。"],
+["one-way route","/ˌwʌn weɪ ˈruːt/","单向路线","It's a one-way route. You can't turn back.","这是单向线路，不能回头。"],
+["re-entry","/ˌriːˈentri/","再次入场","Re-entry is not allowed with the same ticket.","同一张票不能再次入场。"],
+["ruins","/ˈruːɪnz/","遗址，废墟","The first bus up to the ruins leaves at 5:30.","第一班上遗址的巴士 5:30 出发。"],
+["Temple of the Sun","/ˈtempəl əv ðə ˈsʌn/","太阳神庙","The Temple of the Sun lines up with the winter solstice sunrise.","太阳神庙正对冬至的日出方向。","","n"],
+["Temple of the Condor","/ˈtempəl əv ðə ˈkɑːndɔːr/","神鹰神庙","The rock in the Temple of the Condor looks like wings.","神鹰神庙里的岩石像一对翅膀。","","n"],
+["Guardhouse","/ˈɡɑːrdhaʊs/","看守者小屋","The classic postcard photo is taken near the Guardhouse.","明信片里的经典机位就在看守者小屋附近。","","n"],
+["steep","/stiːp/","陡峭的","The stairs are steep and narrow, so use your hands.","台阶又陡又窄，手脚并用。"],
+["Inca","/ˈɪŋkə/","印加（人/帝国）","The Inca built this city without iron tools.","印加人没用铁器就建了这座城。","","n"],
+["Plaza de Armas","/ˈplasa ðe ˈaɾmas/","武器广场","Let's meet at the Plaza de Armas at 9.","9 点在武器广场见。","","n:es"],
+["alpaca","/ælˈpækə/","羊驼","This sweater is made of baby alpaca wool.","这件毛衣是小羊驼毛做的。","llama 是大羊驼，alpaca 个头小、毛更细。"],
+["llama","/ˈlɑːmə/","大羊驼","You can take a photo with a llama for a small tip.","给点小费就能和大羊驼合影。"]
+]},
+{ id:"ba", zh:"布宜诺斯艾利斯", en:"Buenos Aires", when:"10/29 – 10/30 · 11/10", band:"mid", range:[["2026-10-29","2026-10-30"],["2026-11-10","2026-11-10"]], lat:"34°S", words:[
+["Buenos Aires","/ˌbweɪnəs ˈaɪriz/","布宜诺斯艾利斯","Buenos Aires means good airs.","Buenos Aires 意思是「好空气」。","","n"],
+["porteño","/poɾˈteɲo/","布宜人（港口人）","The porteños eat dinner after 10 p.m.","布宜人晚上 10 点后才吃晚饭。","","n:es"],
+["tango show","/ˈtæŋɡoʊ ˌʃoʊ/","探戈秀","Does the tango show include dinner?","探戈秀含晚餐吗？"],
+["milonga","/miˈlonɡa/","探戈舞会","A milonga is where locals go to dance tango.","milonga 是当地人跳探戈的舞会。","","n:es"],
+["Recoleta Cemetery","/ˌrekəˈleɪtə ˈseməteri/","雷科莱塔公墓","Evita is buried in Recoleta Cemetery.","贝隆夫人葬在雷科莱塔公墓。","","n"],
+["mausoleum","/ˌmɔːsəˈliːəm/","陵墓","Some mausoleums look like tiny churches.","有些陵墓像小教堂一样。"],
+["Evita","/eˈviːtə/","贝隆夫人（艾薇塔）","Everyone wants to see Evita's grave.","人人都想看看贝隆夫人的墓。","","n"],
+["Avenida 9 de Julio","/aβeˈniða ˈnweβe ðe ˈxuljo/","七九大道","Avenida 9 de Julio is one of the widest avenues in the world.","七九大道是世界上最宽的大道之一。","9 de Julio = 7 月 9 日，阿根廷独立日。","n:es"],
+["Obelisco","/oβeˈlisko/","方尖碑","The Obelisco stands in the middle of 9 de Julio.","方尖碑立在七九大道中央。","","n:es"],
+["San Telmo","/san ˈtelmo/","圣特尔莫区","San Telmo has old streets and antique shops.","圣特尔莫有老街和古董店。","","n:es"],
+["La Boca","/la ˈβoka/","博卡区","The colorful houses of La Boca are on Caminito street.","博卡区的彩色房子在 Caminito 小街上。","","n:es"],
+["Palermo","/paˈleɾmo/","巴勒莫区","Palermo is full of parks, cafes and jacaranda trees.","巴勒莫到处是公园、咖啡馆和蓝花楹。","","n:es"],
+["jacaranda","/ˌdʒækəˈrændə/","蓝花楹","The jacarandas turn the streets purple in November.","11 月蓝花楹把街道染成紫色。"],
+["Teatro Colón","/teˈatɾo koˈlon/","科隆剧院","Teatro Colón has some of the best acoustics in the world.","科隆剧院的音响效果是世界顶级的。","","n:es"],
+["guided tour","/ˌɡaɪdɪd ˈtʊr/","导览","Our guided tour of the theater is at 11 a.m.","我们的剧院导览是上午 11 点。"],
+["acoustics","/əˈkuːstɪks/","音响效果，声学","The guide said the acoustics are almost perfect.","导游说这里的声学效果近乎完美。"],
+["opera","/ˈɑːpərə/","歌剧","Tonight we're seeing an opera at Teatro Colón.","今晚我们在科隆剧院看歌剧。"],
+["Manon","/maˈnɔ̃/","《曼侬》（马斯奈歌剧）","Manon is a French opera by Massenet.","《曼侬》是马斯奈的法语歌剧。","法语读法，结尾是鼻音，不读出 n。","n:fr"],
+["box","/bɑːks/","（剧院）包厢","Our seats are in a box on the second level.","我们的座位在二层包厢。"],
+["usher","/ˈʌʃər/","引座员","Show your ticket to the usher.","把票给引座员看。"],
+["intermission","/ˌɪntərˈmɪʃən/","中场休息","There is a twenty-minute intermission.","中场休息 20 分钟。"],
+["dress code","/ˈdres ˌkoʊd/","着装要求","Is there a dress code for the opera?","看歌剧有着装要求吗？"],
+["parrilla","/paˈriʃa/","阿根廷烤肉馆","Let's find a parrilla after the show.","散场后找家烤肉馆吧。","阿根廷口音 ll 读 sh，所以是「帕-里-夏」。","n:es"],
+["asado","/aˈsaðo/","阿根廷烤肉","Asado is grilled slowly over wood fire.","阿根廷烤肉用柴火慢慢烤。","","n:es"],
+["medium rare","/ˌmiːdiəm ˈrɛr/","三分熟（偏嫩）","I'd like my steak medium rare.","牛排我要三分熟。"],
+["empanada","/ˌempəˈnɑːdə/","阿根廷馅饼","Two beef empanadas, please.","请来两个牛肉馅饼。"],
+["dulce de leche","/ˈdulse ðe ˈletʃe/","牛奶焦糖酱","Dulce de leche is in almost every Argentine dessert.","阿根廷甜点里几乎都有牛奶焦糖。","","n:es"],
+["alfajor","/alfaˈxoɾ/","阿法豪饼","A box of Havanna alfajores is a perfect gift.","一盒 Havanna 阿法豪饼是很好的伴手礼。","复数是 alfajores。","n:es"],
+["Malbec","/ˈmælbek/","马尔贝克红酒","Argentina is famous for Malbec.","阿根廷以马尔贝克红酒闻名。","","n"],
+["cambio","/ˈkambjo/","换钱（街头换汇喊声）","On Florida Street, people whisper cambio, cambio.","佛罗里达街上有人小声喊「cambio, cambio」。","听到就别理，街头换汇常有假钞。","n:es"]
+]},
+{ id:"ship", zh:"登船与船上生活", en:"On Board", when:"10/31 – 11/10 · MS Fridtjof Nansen", band:"polar", range:["2026-10-31","2026-11-10"], lat:"54°S", words:[
+["Ushuaia","/uːˈswaɪə/","乌斯怀亚","Ushuaia calls itself the southernmost city in the world.","乌斯怀亚自称世界最南端的城市。","读「oo-SWY-uh」，h 不发音。","n"],
+["End of the World","/ˌend əv ðə ˈwɜːrld/","世界尽头","Send a postcard from the End of the World post office.","从「世界尽头」邮局寄张明信片。","西语 Fin del Mundo。","n"],
+["Beagle Channel","/ˈbiːɡəl ˈtʃænəl/","比格尔海峡","We sail through the Beagle Channel on the first evening.","第一晚我们驶过比格尔海峡。","以达尔文乘坐的小猎犬号命名。","n"],
+["MS Fridtjof Nansen","/ˌem ˈes ˈfrɪtjɑːf ˈnænsən/","弗里乔夫·南森号","The MS Fridtjof Nansen is named after a Norwegian polar explorer.","南森号以一位挪威极地探险家命名。","Fridtjof 读「FRIT-yof」，挪威语 j 读 y。","n"],
+["HX Hurtigruten Expeditions","/ˌeɪtʃ ˈeks ˈhɜːrtɪɡruːtən ˌekspəˈdɪʃənz/","海达路德探险邮轮","HX check-in opens at 4 p.m. at the Hotel Emperador.","HX 的报到台下午 4 点在 Emperador 酒店开放。","","n"],
+["expedition cruise","/ˌekspəˈdɪʃən ˈkruːz/","探险邮轮","An expedition cruise is about landings, not shows.","探险邮轮重在登陆，不是看表演。"],
+["embarkation","/ˌembɑːrˈkeɪʃən/","登船","Embarkation starts in the afternoon at the pier.","下午在码头开始登船。"],
+["disembark","/ˌdɪsɪmˈbɑːrk/","下船","We disembark in Ushuaia on the morning of November 10.","我们 11 月 10 日上午在乌斯怀亚下船。"],
+["pier","/pɪr/","码头","The bus takes us from the airport to the pier.","大巴把我们从机场送到码头。"],
+["gangway","/ˈɡæŋweɪ/","舷梯","Hold the rail when you walk down the gangway.","走下舷梯时扶好栏杆。"],
+["cabin","/ˈkæbɪn/","船舱房间","Our cabin number is 422.","我们的舱房是 422。"],
+["deck","/dek/","甲板；（船的）层","Let's go up to the top deck to look for whales.","我们上顶层甲板找鲸鱼吧。"],
+["bow","/baʊ/","船头","Everyone ran to the bow when the iceberg appeared.","冰山出现时大家都跑到船头。","读「拜奥」/baʊ/，和弓 bow /boʊ/ 不同。"],
+["stern","/stɜːrn/","船尾","The best place to watch the wake is at the stern.","看船尾浪花最好在船尾。"],
+["port side","/ˈpɔːrt ˌsaɪd/","左舷","Whales on the port side!","左舷有鲸鱼！","记法：port 和 left 都是四个字母。"],
+["starboard","/ˈstɑːrbərd/","右舷","The glacier is on the starboard side.","冰川在右舷那边。","board 弱读成 /bərd/。"],
+["bridge","/brɪdʒ/","驾驶台","The captain sometimes opens the bridge to guests.","船长有时会开放驾驶台给客人参观。"],
+["expedition team","/ˌekspəˈdɪʃən ˌtiːm/","探险队","The expedition team decides where we land each day.","探险队每天决定在哪里登陆。"],
+["expedition leader","/ˌekspəˈdɪʃən ˈliːdər/","探险队长","The expedition leader will announce the plan at the evening recap.","探险队长会在晚间回顾会上宣布计划。"],
+["recap","/ˈriːkæp/","（每日）回顾会","Recap is at 6:30 in the Science Center.","回顾会 6:30 在科学中心。"],
+["safety drill","/ˈseɪfti ˌdrɪl/","安全演习","The safety drill is mandatory for all guests.","所有乘客都必须参加安全演习。"],
+["muster station","/ˈmʌstər ˌsteɪʃən/","紧急集合点","Your muster station is printed on your cabin card.","您的集合点印在房卡上。"],
+["life jacket","/ˈlaɪf ˌdʒækɪt/","救生衣","Always wear a life jacket in the small boats.","乘小艇时一定要穿救生衣。"],
+["briefing","/ˈbriːfɪŋ/","简报会","The landing briefing is mandatory before your first landing.","第一次登陆前必须参加登陆简报。"],
+["mandatory","/ˈmændətɔːri/","强制的，必须参加的","Attendance is mandatory, or you can't go ashore.","必须出席，否则不能上岸。"],
+["lecture","/ˈlektʃər/","讲座","There's a lecture on penguins at 10 a.m.","上午 10 点有一场关于企鹅的讲座。"],
+["biosecurity","/ˌbaɪoʊsɪˈkjʊrəti/","生物安全检查","Bring your outer layers to the biosecurity check.","带上外层衣物去做生物安全检查。","防止把外来种子、土壤带进南极。"],
+["vacuum","/ˈvækjuːm/","用吸尘器吸","Please vacuum the Velcro and pockets on your gear.","请把装备上的魔术贴和口袋吸干净。"],
+["Velcro","/ˈvelkroʊ/","魔术贴","Seeds often get stuck in Velcro.","种子常常卡在魔术贴里。"],
+["boot wash","/ˈbuːt ˌwɑːʃ/","洗靴站","Use the boot wash before and after every landing.","每次登陆前后都要洗靴。"],
+["Zodiac","/ˈzoʊdiæk/","冲锋艇（橡皮艇）","We go ashore in Zodiacs, ten people per boat.","我们坐冲锋艇上岸，每艇十人。"],
+["landing","/ˈlændɪŋ/","登陆","Today's landing is at Neko Harbour, ice permitting.","今天在内克港登陆，视冰情而定。"],
+["go ashore","/ˌɡoʊ əˈʃɔːr/","上岸","We go ashore in groups by color.","我们按颜色分组上岸。"],
+["boat cruise","/ˈboʊt ˌkruːz/","冲锋艇巡游","If we can't land, we'll do a boat cruise among the icebergs.","如果不能登陆，就在冰山间巡游。"],
+["weather permitting","/ˈweðər pərˈmɪtɪŋ/","视天气而定","We'll try the Polar Plunge tomorrow, weather permitting.","明天天气允许的话，试试极地跳水。"],
+["itinerary","/aɪˈtɪnəreri/","行程","The itinerary changes every day because of ice and weather.","因为冰情和天气，行程每天都在变。"],
+["onboard credit","/ˌɑːnbɔːrd ˈkredɪt/","船上消费额度","Can I use my onboard credit in the shop?","船上消费额度能在商店用吗？","HX 给了 250 欧。"],
+["beverage package","/ˈbevərɪdʒ ˌpækɪdʒ/","饮品套餐","Is this cocktail included in my beverage package?","这杯鸡尾酒包含在饮品套餐里吗？"],
+["seasick","/ˈsiːsɪk/","晕船的","I feel seasick. Is there a doctor on board?","我晕船了，船上有医生吗？"],
+["swell","/swel/","涌浪","The captain expects a four-meter swell tonight.","船长预计今晚有四米涌浪。"],
+["Drake Passage","/ˈdreɪk ˈpæsɪdʒ/","德雷克海峡","The Drake Passage is one of the roughest seas on Earth.","德雷克海峡是地球上最汹涌的海域之一。","","n"],
+["Drake Shake","/ˈdreɪk ˌʃeɪk/","德雷克摇（风浪大）","We got the Drake Shake, not the Drake Lake.","我们遇上了「德雷克摇」，不是「德雷克湖」。","Drake Lake 指风平浪静。"],
+["Polar Plunge","/ˈpoʊlər ˈplʌndʒ/","极地跳水","Are you brave enough for the Polar Plunge?","你敢参加极地跳水吗？"],
+["hot tub","/ˈhɑːt ˌtʌb/","热水池","Warm up in the hot tub after the plunge.","跳完水去热水池暖和一下。"],
+["observation lounge","/ˌɑːbzərˈveɪʃən ˌlaʊndʒ/","观景休息厅","The observation lounge has the best view of the ice.","观景厅看冰景最好。"]
+]},
+{ id:"ice", zh:"冰与海 · 南极地理", en:"Ice & Geography", when:"11/1 – 11/9", band:"polar", range:["2026-11-01","2026-11-09"], lat:"64°49′S", words:[
+["Antarctica","/ænˈtɑːrktɪkə/","南极洲","Antarctica is the coldest, windiest continent on Earth.","南极洲是地球上最冷、风最大的大陆。","第一个 c 要读出来：ant-ARK-tik-uh。","n"],
+["Antarctic Peninsula","/ænˈtɑːrktɪk pəˈnɪnsələ/","南极半岛","The Antarctic Peninsula points toward South America.","南极半岛伸向南美洲。","","n"],
+["South Shetland Islands","/ˌsaʊθ ˈʃetlənd ˈaɪləndz/","南设得兰群岛","The South Shetland Islands are often our first sight of land.","南设得兰群岛常常是我们看到的第一片陆地。","","n"],
+["Antarctic Circle","/ænˈtɑːrktɪk ˈsɜːrkəl/","南极圈","The Antarctic Circle is at 66 degrees 34 minutes south.","南极圈在南纬 66 度 34 分。","","n"],
+["latitude","/ˈlætɪtuːd/","纬度","Our farthest point south is 64 degrees 49 minutes south latitude.","我们最南到南纬 64 度 49 分。"],
+["continent","/ˈkɑːntɪnənt/","大陆，洲","Antarctica is my seventh continent!","南极洲是我的第七个大洲！"],
+["iceberg","/ˈaɪsbɜːrɡ/","冰山","About ninety percent of an iceberg is under water.","冰山大约九成在水下。"],
+["tabular iceberg","/ˈtæbjələr ˈaɪsbɜːrɡ/","平顶冰山（桌状冰山）","That tabular iceberg broke off an ice shelf.","那座平顶冰山是从冰架上断下来的。"],
+["growler","/ˈɡraʊlər/","小冰块（汽车大小）","Watch out for growlers. They're hard to see.","小心小冰块，不容易看见。","撞船时会发出低吼声 growl。"],
+["bergy bit","/ˈbɜːrɡi ˌbɪt/","小冰山（房子大小）","A bergy bit is bigger than a growler but smaller than an iceberg.","小冰山比冰块大，比冰山小。"],
+["brash ice","/ˈbræʃ ˌaɪs/","碎冰","The Zodiac pushed slowly through the brash ice.","冲锋艇慢慢穿过碎冰。"],
+["pack ice","/ˈpæk ˌaɪs/","浮冰群","Heavy pack ice blocked the channel.","厚厚的浮冰群挡住了海峡。"],
+["ice floe","/ˈaɪs ˌfloʊ/","浮冰","A seal was sleeping on an ice floe.","一只海豹在浮冰上睡觉。","floe 读 /floʊ/，和 flow 同音。"],
+["sea ice","/ˈsiː ˌaɪs/","海冰","Early in the season, the sea ice is still unbroken.","早季的海冰还很完整。"],
+["glacier","/ˈɡleɪʃər/","冰川","The glacier flows down into the bay.","冰川一直延伸到海湾里。"],
+["calving","/ˈkævɪŋ/","冰川崩解","We heard a loud crack and saw the glacier calving.","我们听见一声巨响，看到冰川崩落。","l 不发音，读「CAV-ing」。"],
+["crevasse","/krəˈvæs/","冰裂缝","Stay on the marked path. There may be crevasses.","沿着标记走，可能有冰裂缝。"],
+["ice shelf","/ˈaɪs ˌʃelf/","冰架","An ice shelf is a floating sheet of glacier ice.","冰架是浮在海上的冰川冰。"],
+["katabatic wind","/ˌkætəˈbætɪk ˈwɪnd/","下降风（冰盖下吹的强风）","A katabatic wind can suddenly reach fifty knots.","下降风能突然达到 50 节。"],
+["knot","/nɑːt/","节（航速/风速单位）","The ship is sailing at twelve knots.","船速 12 节。","k 不发音，和 not 同音。"],
+["whiteout","/ˈwaɪtaʊt/","白化天气（白茫茫看不清）","The landing was cancelled because of a whiteout.","因为白化天气，登陆取消了。"],
+["daylight","/ˈdeɪlaɪt/","日照，白昼","We have almost eighteen hours of daylight.","日照将近 18 小时。"],
+["research station","/ˈriːsɜːrtʃ ˈsteɪʃən/","科考站","Some research stations accept visitors in summer.","有些科考站夏天接待游客。"],
+["Antarctic Treaty","/ænˈtɑːrktɪk ˈtriːti/","南极条约","Under the Antarctic Treaty, no country owns Antarctica.","根据南极条约，南极不属于任何国家。","","n"],
+["IAATO","/aɪˈɑːtoʊ/","国际南极旅游组织","IAATO rules say only 100 people can be ashore at once.","国际南极旅游组织规定同时上岸不超过 100 人。","读「eye-AH-toe」。","n"],
+["Lemaire Channel","/ləˈmɛr ˈtʃænəl/","勒梅尔海峡","If the ice allows, we'll sail through the Lemaire Channel.","冰情允许的话，我们会穿过勒梅尔海峡。","","n"],
+["Neko Harbour","/ˈniːkoʊ ˈhɑːrbər/","内克港","Neko Harbour is a landing on the continent itself.","内克港是登上南极大陆本土的登陆点。","常见登陆点，具体由船长当天决定。","n"],
+["Deception Island","/dɪˈsepʃən ˈaɪlənd/","欺骗岛","Deception Island is the crater of an active volcano.","欺骗岛是一座活火山的火山口。","","n"]
+]},
+{ id:"wild", zh:"南极野生动物", en:"Wildlife", when:"11/1 – 11/9", band:"polar", range:["2026-11-01","2026-11-09"], lat:"64°S", words:[
+["penguin","/ˈpeŋɡwɪn/","企鹅","Look, the penguins are walking right past us!","看，企鹅就从我们身边走过！"],
+["gentoo penguin","/ˈdʒentuː ˈpeŋɡwɪn/","巴布亚企鹅（白眉企鹅）","Gentoo penguins have an orange beak and a white patch over the eye.","巴布亚企鹅嘴是橙色的，眼睛上方有块白斑。"],
+["Adélie penguin","/əˈdeɪli ˈpeŋɡwɪn/","阿德利企鹅","The Adélie penguin was named after a French explorer's wife.","阿德利企鹅以一位法国探险家妻子的名字命名。"],
+["chinstrap penguin","/ˈtʃɪnstræp ˈpeŋɡwɪn/","帽带企鹅（南极企鹅）","The chinstrap penguin has a thin black line under its chin.","帽带企鹅下巴下有一道细黑线。"],
+["rookery","/ˈrʊkəri/","（企鹅/海鸟）繁殖地","The rookery smells strong, but it's amazing.","繁殖地味道很冲，但很震撼。"],
+["colony","/ˈkɑːləni/","群落","This colony has about four thousand pairs.","这个群落约有四千对。"],
+["nesting","/ˈnestɪŋ/","筑巢","Early November is the start of nesting season.","11 月初是筑巢季的开始。"],
+["pebble","/ˈpebəl/","小石子","Male penguins give pebbles to their partners.","雄企鹅会送小石子给伴侣。"],
+["courtship","/ˈkɔːrtʃɪp/","求偶","We saw a courtship display with loud calls.","我们看到一场高声鸣叫的求偶表演。"],
+["penguin highway","/ˈpeŋɡwɪn ˈhaɪweɪ/","企鹅高速路（企鹅踩出的小道）","Don't stand on the penguin highway.","别站在企鹅高速路上。"],
+["right of way","/ˌraɪt əv ˈweɪ/","优先通行权","Penguins always have the right of way.","企鹅永远优先通行。"],
+["guano","/ˈɡwɑːnoʊ/","鸟粪","The pink color on the snow is penguin guano.","雪上的粉红色是企鹅粪。","企鹅吃磷虾，所以粪是粉色。"],
+["keep your distance","/ˌkiːp jʊr ˈdɪstəns/","保持距离","Keep your distance: at least five meters from wildlife.","保持距离：离动物至少五米。"],
+["seal","/siːl/","海豹","A seal is resting on the beach.","一只海豹在沙滩上休息。"],
+["leopard seal","/ˈlepərd ˌsiːl/","豹海豹","The leopard seal is a top predator of penguins.","豹海豹是企鹅的顶级捕食者。","leopard 的 o 不发音：LEP-erd。"],
+["Weddell seal","/ˈwedəl ˌsiːl/","威德尔海豹","Weddell seals can dive for over an hour.","威德尔海豹能潜水一个多小时。"],
+["crabeater seal","/ˈkræbˌiːtər ˌsiːl/","食蟹海豹","Crabeater seals actually eat krill, not crabs.","食蟹海豹其实吃磷虾，不吃蟹。"],
+["fur seal","/ˈfɜːr ˌsiːl/","海狗（毛皮海豹）","Fur seals can be aggressive, so stay back.","海狗可能有攻击性，离远点。"],
+["humpback whale","/ˈhʌmpbæk ˈweɪl/","座头鲸","A humpback whale surfaced right next to our Zodiac.","一头座头鲸在我们冲锋艇旁边浮了上来。"],
+["orca","/ˈɔːrkə/","虎鲸","A pod of orcas is hunting near the ice.","一群虎鲸在冰边捕猎。","也叫 killer whale。"],
+["minke whale","/ˈmɪŋki ˈweɪl/","小须鲸","Minke whales are small and curious.","小须鲸个头小，很好奇。","minke 读「MING-kee」。"],
+["pod","/pɑːd/","（鲸、海豚）群","We saw a pod of six humpbacks.","我们看到六头座头鲸一群。"],
+["blow","/bloʊ/","鲸喷气（水柱）","Blow at two o'clock!","两点钟方向有鲸喷气！"],
+["fluke","/fluːk/","鲸尾鳍","The whale showed its fluke before diving.","鲸下潜前露出了尾鳍。","每头座头鲸的尾鳍花纹都不同，像指纹。"],
+["breach","/briːtʃ/","（鲸）跃出水面","Did you see that whale breach?","你看见那头鲸跃出水面了吗？"],
+["krill","/krɪl/","磷虾","Almost everything here depends on krill.","这里几乎所有生物都靠磷虾。"],
+["blubber","/ˈblʌbər/","鲸脂，海豹脂肪层","Blubber keeps seals warm in icy water.","脂肪层让海豹在冰水里保暖。"],
+["albatross","/ˈælbətrɔːs/","信天翁","The albatross followed the ship across the Drake.","信天翁跟着船飞过德雷克海峡。"],
+["wingspan","/ˈwɪŋspæn/","翼展","A wandering albatross has a wingspan of over three meters.","漂泊信天翁翼展超过三米。"],
+["petrel","/ˈpetrəl/","海燕（鹱）","Cape petrels have black and white checkered wings.","花斑鹱的翅膀是黑白格子的。"],
+["skua","/ˈskjuːə/","贼鸥","Skuas steal penguin eggs.","贼鸥会偷企鹅蛋。"],
+["binoculars","/bɪˈnɑːkjələrz/","望远镜","Can I borrow your binoculars for a second?","能借你的望远镜看一下吗？"],
+["at two o'clock","/æt ˈtuː əˈklɑːk/","两点钟方向","Whale at two o'clock, about two hundred meters!","两点钟方向有鲸，大约两百米！","船头是 12 点，右舷 3 点，船尾 6 点，左舷 9 点。"]
+]},
+{ id:"gear", zh:"极地装备与穿衣", en:"Polar Gear", when:"10/31 – 11/10 · 南极 −8 ~ 2℃", band:"polar", range:["2026-10-31","2026-11-10"], lat:"−8℃", words:[
+["layer up","/ˌleɪər ˈʌp/","多穿几层","It's windy on deck, so layer up.","甲板上风大，多穿几层。"],
+["base layer","/ˈbeɪs ˌleɪər/","排汗内层","Wear a merino base layer under everything.","最里面穿美利奴羊毛排汗层。"],
+["mid layer","/ˈmɪd ˌleɪər/","中间保暖层","A fleece works well as a mid layer.","抓绒适合做中间层。"],
+["merino wool","/məˈriːnoʊ ˈwʊl/","美利奴羊毛","Merino wool stays warm even when it's wet.","美利奴羊毛湿了也保暖。"],
+["fleece","/fliːs/","抓绒","I'll bring a light fleece for the Zodiac.","我带件薄抓绒坐冲锋艇。"],
+["down jacket","/ˈdaʊn ˌdʒækɪt/","羽绒服","A light down jacket packs small.","轻羽绒服压缩后很小。"],
+["expedition jacket","/ˌekspəˈdɪʃən ˈdʒækɪt/","探险外套","HX gives every guest an expedition jacket to keep.","HX 送每位客人一件探险外套。"],
+["waterproof pants","/ˈwɔːtərpruːf ˈpænts/","防水裤（冲锋裤）","Waterproof pants are required for every landing.","每次登陆都必须穿防水裤。","英式英语叫 waterproof trousers。"],
+["rubber boots","/ˈrʌbər ˈbuːts/","防水长靴","Can I borrow rubber boots in size 42?","能借一双 42 码的防水靴吗？","说 EU size 42，免得对方按美码理解。"],
+["liner gloves","/ˈlaɪnər ˌɡlʌvz/","薄内层手套","Liner gloves let you use your phone screen.","薄内层手套可以触屏。"],
+["beanie","/ˈbiːni/","毛线帽","Don't forget your beanie, it's minus five outside.","别忘了毛线帽，外面零下五度。"],
+["neck gaiter","/ˈnek ˌɡeɪtər/","脖套","A neck gaiter protects your face from the wind.","脖套可以挡风护脸。"],
+["balaclava","/ˌbæləˈklɑːvə/","（只露眼的）面罩","In strong wind, a balaclava is a lifesaver.","大风天面罩简直救命。"],
+["polarized sunglasses","/ˈpoʊləraɪzd ˈsʌnˌɡlæsɪz/","偏光太阳镜","The glare off the snow is strong, so wear polarized sunglasses.","雪地反光很强，戴偏光太阳镜。"],
+["glare","/ɡlɛr/","刺眼的反光","The glare from the ice hurts my eyes.","冰面反光刺得眼睛疼。"],
+["sunscreen","/ˈsʌnskriːn/","防晒霜","Put on SPF 50 sunscreen even when it's cloudy.","阴天也要涂 SPF50 防晒。"],
+["lip balm","/ˈlɪp ˌbɑːm/","润唇膏","The wind dries your lips, so bring lip balm.","风会吹干嘴唇，带上润唇膏。","balm 的 l 不发音。"],
+["dry bag","/ˈdraɪ ˌbæɡ/","防水袋","Keep your camera in a dry bag on the Zodiac.","坐冲锋艇时把相机放进防水袋。"],
+["hand warmer","/ˈhænd ˌwɔːrmər/","暖手宝（暖贴）","Put a hand warmer next to your spare battery.","把暖贴放在备用电池旁边。"],
+["power bank","/ˈpaʊər ˌbæŋk/","充电宝","Power banks must go in your carry-on, not checked luggage.","充电宝必须随身，不能托运。"],
+["adapter","/əˈdæptər/","转换插头","Do you have a plug adapter for this outlet?","有适合这个插座的转换插头吗？"],
+["outlet","/ˈaʊtlet/","插座（美式）","Is there a USB outlet in the cabin?","舱房里有 USB 插座吗？","英式叫 socket。"],
+["eye mask","/ˈaɪ ˌmæsk/","眼罩","With eighteen hours of daylight, an eye mask helps you sleep.","日照 18 小时，眼罩能帮你睡着。"],
+["swimsuit","/ˈswɪmsuːt/","泳衣","Pack a swimsuit for the Polar Plunge.","为极地跳水带上泳衣。"]
+]},
+{ id:"rio", zh:"里约热内卢", en:"Rio de Janeiro", when:"11/11 – 11/13", band:"trop", range:["2026-11-11","2026-11-13"], lat:"22°54′S", words:[
+["Rio de Janeiro","/ˌriːoʊ deɪ ʒəˈnɛroʊ/","里约热内卢","Rio de Janeiro means River of January.","Rio de Janeiro 意为「一月之河」。","当地人读「HEE-oo」，r 开头发 h 音。","n"],
+["Carioca","/ˌkæriˈoʊkə/","里约人","Cariocas love the beach on weekends.","里约人周末爱去海滩。","","n"],
+["Christ the Redeemer","/ˌkraɪst ðə rɪˈdiːmər/","救世基督像","Go up to Christ the Redeemer early, before the clouds.","趁云来之前早点上基督像。","","n"],
+["Corcovado","/ˌkɔːrkəˈvɑːdoʊ/","科尔科瓦多山","The train up Corcovado goes through the forest.","上科尔科瓦多山的小火车穿过森林。","","n"],
+["Sugarloaf Mountain","/ˈʃʊɡərloʊf ˈmaʊntən/","面包山","We'll take the cable car up Sugarloaf Mountain at sunset.","我们日落时坐缆车上面包山。","葡语 Pão de Açúcar（糖面包）。","n"],
+["cable car","/ˈkeɪbəl ˌkɑːr/","缆车","The cable car leaves every twenty minutes.","缆车每 20 分钟一班。"],
+["Urca","/ˈuɾkɐ/","乌尔卡","The Sugarloaf cable car starts in Urca.","面包山缆车从乌尔卡出发。","","n:pt"],
+["Botafogo","/botaˈfoɡu/","博塔弗戈区","Our hotel is in Botafogo, near the bay.","我们的酒店在博塔弗戈，靠近海湾。","","n:pt"],
+["Ipanema","/ˌiːpəˈneɪmə/","伊帕内玛海滩","Let's watch the sunset from Ipanema.","我们去伊帕内玛看日落吧。","","n"],
+["Arpoador","/aɾpoaˈdoʁ/","阿尔波阿多尔礁石","At Arpoador, people clap when the sun goes down.","在阿尔波阿多尔，太阳落下时大家会鼓掌。","伊帕内玛海滩东端的礁石，看日落最佳。","n:pt"],
+["applaud","/əˈplɔːd/","鼓掌","Locals applaud the sunset every evening.","当地人每天傍晚都为日落鼓掌。"],
+["Copacabana","/ˌkoʊpəkəˈbænə/","科帕卡巴纳海滩","The wavy sidewalk at Copacabana is famous.","科帕卡巴纳的波浪人行道很有名。","","n"],
+["Lapa Arches","/ˈlɑːpə ˈɑːrtʃɪz/","拉帕拱门","The Lapa Arches were once an aqueduct.","拉帕拱门以前是一条引水渠。","","n"],
+["Selarón Steps","/seˈlaɾon ˈsteps/","塞勒隆阶梯","An artist covered the Selarón Steps with tiles from all over the world.","一位艺术家用世界各地的瓷砖铺满了塞勒隆阶梯。","","n"],
+["Santa Teresa","/ˌsæntə təˈreɪzə/","圣特雷莎区","The old yellow tram climbs up to Santa Teresa.","老式黄色电车开上圣特雷莎区。","","n"],
+["Tijuca Forest","/tʃiˈʒukə ˈfɔːrɪst/","蒂茹卡森林","Tijuca Forest is one of the largest urban forests in the world.","蒂茹卡森林是世界最大的城市森林之一。","","n"],
+["samba","/ˈsæmbə/","桑巴","Thursday night is great for live samba in Lapa.","周四晚上去拉帕听现场桑巴最好。"],
+["caipirinha","/ˌkaɪpɪˈriːnjə/","卡皮里尼亚鸡尾酒","A caipirinha is made with cachaça, lime and sugar.","卡皮里尼亚用甘蔗酒、青柠和糖调成。"],
+["açaí","/ˌɑːsɑːˈiː/","巴西莓","A bowl of açaí is the perfect beach snack.","一碗巴西莓是完美的海滩小吃。","三个音节：ah-sah-EE。"],
+["obrigado","/obɾiˈɡadu/","谢谢（葡语）","Obrigado! said the waiter with a big smile.","服务员笑着说：「谢谢！」","男生说 obrigado，女生说 obrigada。","n:pt"],
+["tudo bem","/ˈtudu ˈbẽj̃/","你好吗/还好（葡语）","Tudo bem? Tudo bem!","你好吗？挺好！","既是问候也是回答。","n:pt"],
+["visibility","/ˌvɪzəˈbɪləti/","能见度","Check the visibility before you go up the mountain.","上山前先看看能见度。"],
+["cloud cover","/ˈklaʊd ˌkʌvər/","云层覆盖","The statue is hidden under cloud cover today.","今天基督像被云遮住了。"]
+]},
+{ id:"nyc", zh:"纽约", en:"New York", when:"11/14 – 11/17", band:"mid", range:["2026-11-14","2026-11-17"], lat:"40°43′N", words:[
+["Port Authority Bus Terminal","/ˈpɔːrt əˈθɔːrəti ˈbʌs ˈtɜːrmɪnəl/","港务局巴士总站","Take the bus to Port Authority, then walk to the theater.","坐公交到港务局巴士总站，再走去剧院。","","n"],
+["NJ Transit","/ˌen ˈdʒeɪ ˈtrænzɪt/","新泽西公共交通","NJ Transit buses run from North Bergen to Manhattan.","新泽西公交从北卑尔根开往曼哈顿。","","n"],
+["North Bergen","/ˌnɔːrθ ˈbɜːrɡən/","北卑尔根（新泽西）","Our hotel is in North Bergen, New Jersey, not Manhattan.","我们的酒店在新泽西北卑尔根，不在曼哈顿。","","n"],
+["Lincoln Tunnel","/ˈlɪŋkən ˈtʌnəl/","林肯隧道","The bus goes through the Lincoln Tunnel under the Hudson River.","公交穿过哈德逊河下的林肯隧道。","Lincoln 第二个 l 不发音：LING-kun。","n"],
+["toll","/toʊl/","过路费","The taxi fare includes the tunnel toll.","出租车费包含隧道过路费。"],
+["subway","/ˈsʌbweɪ/","地铁","Take the subway, the 1 train, to South Ferry.","坐地铁 1 号线到 South Ferry。"],
+["OMNY","/ˈɑːmni/","纽约地铁刷卡系统","Just tap your card or phone on the OMNY reader.","把卡或手机贴在 OMNY 读卡器上就行。","读「AHM-nee」。","n"],
+["uptown","/ˌʌpˈtaʊn/","往北（往上城方向）","Make sure you take the uptown train, not downtown.","确认坐往北的车，不是往南的。","downtown = 往南。"],
+["express train","/ɪkˈspres ˌtreɪn/","快车（跳站）","The express train skips this station. Take the local.","快车不停这站，坐慢车。","local train = 站站停。"],
+["transfer","/ˈtrænsfɜːr/","换乘","Transfer to the 1 train at Times Square.","在时代广场换乘 1 号线。"],
+["block","/blɑːk/","街区","The theater is one block from Central Perk.","剧院离老友记咖啡馆一个街区。"],
+["Broadway","/ˈbrɔːdweɪ/","百老汇","We're seeing a Broadway show this afternoon.","今天下午我们看百老汇演出。","","n"],
+["Hamilton","/ˈhæməltən/","《汉密尔顿》","Hamilton tells the story of a founding father in hip-hop.","《汉密尔顿》用嘻哈讲一位开国元勋的故事。","","n"],
+["Richard Rodgers Theatre","/ˈrɪtʃərd ˈrɑːdʒərz ˈθiːətər/","理查德·罗杰斯剧院","The Richard Rodgers Theatre is on West 46th Street.","理查德·罗杰斯剧院在西 46 街。","","n"],
+["matinee","/ˌmætənˈeɪ/","（下午）日场","The matinee starts at 1 p.m.","日场下午 1 点开始。","来自法语，重音在最后：mat-in-AY。"],
+["orchestra seats","/ˈɔːrkɪstrə ˌsiːts/","池座（一楼正厅）","Our orchestra seats are close to the stage.","我们的池座离舞台很近。","美国剧院里 orchestra 指一楼座位，不是乐队。"],
+["mezzanine","/ˈmezəniːn/","夹层楼座（二楼）","The front mezzanine has a great view.","二楼前排视野很好。"],
+["Playbill","/ˈpleɪbɪl/","百老汇节目单","Ask the usher for a free Playbill.","向引座员要一本免费节目单。","","n"],
+["mobile ticket","/ˈmoʊbəl ˈtɪkɪt/","电子票（手机票）","My mobile ticket hasn't arrived yet. Can you resend it?","我的手机票还没收到，能重发吗？"],
+["will call","/ˈwɪl ˌkɔːl/","现场取票处","You can pick up your tickets at will call.","可以在现场取票处取票。"],
+["box office","/ˈbɑːks ˌɔːfɪs/","售票处","Let's ask at the box office.","去售票处问问。"],
+["standing ovation","/ˈstændɪŋ oʊˈveɪʃən/","起立鼓掌","The show ended with a standing ovation.","演出在全场起立鼓掌中结束。"],
+["Radio City Music Hall","/ˈreɪdioʊ ˈsɪti ˈmjuːzɪk ˌhɔːl/","无线电城音乐厅","Radio City Music Hall opened in 1932.","无线电城音乐厅 1932 年开幕。","","n"],
+["Rockettes","/rɑːˈkets/","火箭女郎舞团","The Rockettes kick in perfect unison.","火箭女郎踢腿整齐划一。","","n"],
+["Christmas Spectacular","/ˈkrɪsməs spekˈtækjələr/","圣诞奇观秀","The Christmas Spectacular has no intermission.","圣诞秀没有中场休息。","","n"],
+["Times Square","/ˈtaɪmz ˈskwɛr/","时代广场","Times Square is brightest after dark.","时代广场天黑后最亮。","","n"],
+["Rockefeller Center","/ˈrɑːkəfelər ˈsentər/","洛克菲勒中心","The Christmas tree at Rockefeller Center isn't lit yet.","洛克菲勒中心的圣诞树还没点灯。","","n"],
+["Top of the Rock","/ˌtɑːp əv ðə ˈrɑːk/","洛克菲勒顶楼观景台","From Top of the Rock you can see the Empire State Building.","在洛克菲勒顶楼能看到帝国大厦。","","n"],
+["observation deck","/ˌɑːbzərˈveɪʃən ˌdek/","观景台","Stay on the observation deck until the lights come on.","在观景台一直待到亮灯。"],
+["St. Patrick's Cathedral","/seɪnt ˈpætrɪks kəˈθiːdrəl/","圣帕特里克大教堂","St. Patrick's Cathedral is right across from Rockefeller Center.","圣帕特里克大教堂就在洛克菲勒中心对面。","","n"],
+["Battery Park","/ˈbætəri ˌpɑːrk/","炮台公园","The ferry to the Statue of Liberty leaves from Battery Park.","去自由女神的渡轮从炮台公园出发。","","n"],
+["Statue of Liberty","/ˈstætʃuː əv ˈlɪbərti/","自由女神像","We have crown tickets for the Statue of Liberty.","我们有自由女神皇冠票。","","n"],
+["crown","/kraʊn/","皇冠（女神像头顶）","Only medicine and cameras are allowed in the crown.","皇冠里只能带药和相机。"],
+["pedestal","/ˈpedɪstəl/","基座","The pedestal has a small museum inside.","基座里有个小博物馆。"],
+["spiral staircase","/ˈspaɪrəl ˈstɛrkeɪs/","螺旋楼梯","The spiral staircase to the crown has 162 steps.","上皇冠的螺旋楼梯有 162 级。"],
+["locker","/ˈlɑːkər/","储物柜","Put your bag in a locker before you go up.","上去前把包放进储物柜。"],
+["security screening","/sɪˈkjʊrəti ˈskriːnɪŋ/","安检","Security screening starts at 8:30 at Battery Park.","炮台公园 8:30 开始安检。"],
+["ferry","/ˈferi/","渡轮","The ferry stops at Liberty Island and Ellis Island.","渡轮停自由岛和埃利斯岛。"],
+["Ellis Island","/ˈelɪs ˈaɪlənd/","埃利斯岛（移民博物馆）","Millions of immigrants arrived through Ellis Island.","数百万移民经埃利斯岛进入美国。","","n"],
+["Charging Bull","/ˈtʃɑːrdʒɪŋ ˈbʊl/","华尔街铜牛","There's always a line to take photos with the Charging Bull.","和铜牛合影总要排队。","","n"],
+["9/11 Memorial","/naɪn ɪˈlevən məˈmɔːriəl/","9·11 纪念馆","The 9/11 Memorial has two reflecting pools.","9·11 纪念馆有两个倒影池。","读作 nine-eleven。","n"],
+["reflecting pool","/rɪˈflektɪŋ ˌpuːl/","倒影池","The reflecting pools sit where the Twin Towers stood.","倒影池就在双子塔原址上。"],
+["the Met","/ðə ˈmet/","大都会艺术博物馆","The Met is on the east side of Central Park.","大都会博物馆在中央公园东侧。","全称 the Metropolitan Museum of Art。","n"],
+["MoMA","/ˈmoʊmə/","现代艺术博物馆","Van Gogh's Starry Night is at MoMA.","梵高的《星月夜》在 MoMA。","读「MOH-muh」。","n"],
+["bodega","/boʊˈdeɪɡə/","街角小店","Grab a coffee at the bodega on the corner.","在街角小店买杯咖啡。"]
+]},
+{ id:"philly", zh:"费城 · NBA", en:"Philadelphia & NBA", when:"11/15", band:"mid", range:["2026-11-15","2026-11-15"], lat:"39°57′N", words:[
+["Philadelphia","/ˌfɪləˈdelfiə/","费城","Philadelphia means city of brotherly love.","Philadelphia 意为「兄弟之爱之城」。","昵称 Philly。","n"],
+["Amtrak","/ˈæmtræk/","美铁","Take Amtrak from Newark Penn Station to Philadelphia.","从纽瓦克宾州车站坐美铁去费城。","","n"],
+["round trip","/ˌraʊnd ˈtrɪp/","往返","A round-trip ticket to Philadelphia, please.","一张去费城的往返票。"],
+["30th Street Station","/ˈθɜːrtiəθ ˌstriːt ˈsteɪʃən/","第30街车站","The train arrives at 30th Street Station.","火车到达第 30 街车站。","thirtieth 两个 th 都要咬舌。","n"],
+["SEPTA","/ˈseptə/","费城公共交通","Take the SEPTA subway to NRG Station.","坐 SEPTA 地铁到 NRG 站。","","n"],
+["Independence Hall","/ˌɪndɪˈpendəns ˌhɔːl/","独立宫","The Declaration of Independence was signed in Independence Hall.","《独立宣言》在独立宫签署。","","n"],
+["Liberty Bell","/ˈlɪbərti ˌbel/","自由钟","The Liberty Bell has a famous crack.","自由钟上有一道著名的裂缝。","","n"],
+["Reading Terminal Market","/ˈredɪŋ ˈtɜːrmɪnəl ˈmɑːrkɪt/","雷丁站市场","Let's have breakfast at Reading Terminal Market.","去雷丁站市场吃早饭。","Reading 是地名，读「RED-ing」，不读 reading。","n"],
+["cheesesteak","/ˈtʃiːzsteɪk/","芝士牛肉三明治","You can't leave Philly without a cheesesteak.","来费城一定要吃芝士牛排三明治。"],
+["wit","/wɪt/","（点餐）加洋葱","One cheesesteak with provolone, wit.","一份普罗沃隆芝士牛排，加洋葱。","费城方言：wit = with onions，witout = 不加。"],
+["Rocky Steps","/ˈrɑːki ˌsteps/","洛奇台阶","Run up the Rocky Steps like in the movie.","像电影里那样跑上洛奇台阶。","","n"],
+["76ers","/ˌsevənti ˈsɪksərz/","费城 76 人队","The 76ers play the Pacers at 1 p.m.","76 人下午 1 点对阵步行者。","球迷简称 Sixers。","n"],
+["Pacers","/ˈpeɪsərz/","印第安纳步行者队","The Indiana Pacers are the away team today.","今天印第安纳步行者是客队。","","n"],
+["home team","/ˌhoʊm ˈtiːm/","主队","The home team wears white.","主队穿白色。","away team = 客队。"],
+["tip-off","/ˈtɪp ˌɔːf/","开场跳球","Tip-off is at 1 p.m., so get there early.","1 点开球，早点到。"],
+["arena","/əˈriːnə/","室内体育馆","The arena store opens ninety minutes before the game.","球馆商店赛前 90 分钟开门。"],
+["team store","/ˈtiːm ˌstɔːr/","球队官方商店","Do you have arena-exclusive items in the team store?","球队商店有场馆限定商品吗？"],
+["jersey","/ˈdʒɜːrzi/","球衣","I'm looking for a number 23 jersey.","我想找一件 23 号球衣。"],
+["Swingman","/ˈswɪŋmæn/","Swingman 球衣（主流款）","The Swingman jersey has stitched numbers.","Swingman 球衣的号码是绣的。"],
+["Authentic","/ɔːˈθentɪk/","Authentic 球员版球衣","The Authentic jersey is the same one the players wear.","Authentic 是球员同款。"],
+["City Edition","/ˈsɪti ɪˈdɪʃən/","城市版（球衣）","Is the new City Edition jersey available yet?","今年的城市版球衣出了吗？"],
+["stitched","/stɪtʃt/","绣制的","Is the number stitched or heat-pressed?","号码是绣的还是热压的？","heat-pressed = 热压印。"],
+["section","/ˈsekʃən/","（座位）区","We're in section 212, row 8.","我们在 212 区第 8 排。"],
+["halftime","/ˈhæfˌtaɪm/","中场休息","Let's grab food at halftime.","中场去买吃的。"],
+["overtime","/ˈoʊvərˌtaɪm/","加时赛","The game went into overtime!","比赛打进加时了！"]
+]},
+{ id:"niagara", zh:"多伦多 · 尼亚加拉", en:"Toronto & Niagara", when:"11/17 – 11/20", band:"mid", range:["2026-11-17","2026-11-20"], lat:"43°05′N", words:[
+["Niagara Falls","/naɪˈæɡrə ˈfɔːlz/","尼亚加拉大瀑布","Niagara Falls is about ninety minutes from Toronto.","尼亚加拉瀑布离多伦多约 90 分钟。","读「nai-AG-ra」，重音在 AG。","n"],
+["Horseshoe Falls","/ˈhɔːrsʃuː ˈfɔːlz/","马蹄瀑布","The Horseshoe Falls is on the Canadian side.","马蹄瀑布在加拿大一侧。","","n"],
+["Table Rock","/ˈteɪbəl ˈrɑːk/","桌岩","Journey Behind the Falls starts at Table Rock Centre.","瀑布背后之旅从桌岩中心出发。","","n"],
+["Journey Behind the Falls","/ˈdʒɜːrni bɪˈhaɪnd ðə ˈfɔːlz/","瀑布背后之旅","Journey Behind the Falls takes you into tunnels behind the water.","瀑布背后之旅带你走进水帘后面的隧道。","","n"],
+["Niagara Parks Power Station","/naɪˈæɡrə ˈpɑːrks ˈpaʊər ˈsteɪʃən/","尼亚加拉公园发电站","The Power Station opened in 1905.","这座发电站 1905 年启用。","","n"],
+["hydroelectric","/ˌhaɪdroʊɪˈlektrɪk/","水力发电的","It was one of the first big hydroelectric plants.","它是最早的大型水电站之一。"],
+["tunnel","/ˈtʌnəl/","隧道","The tunnel ends at a platform by the river.","隧道尽头是河边的观景平台。"],
+["Skylon Tower","/ˈskaɪlɑːn ˈtaʊər/","Skylon 塔","If the top of the Skylon Tower is in the clouds, skip it.","Skylon 塔尖进云就别上了。","","n"],
+["Fallsview","/ˈfɔːlzvjuː/","瀑布景观（区/房型）","Our hotel is on Fallsview Boulevard.","我们的酒店在瀑布景观大道上。","","n"],
+["Clifton Hill","/ˈklɪftən ˈhɪl/","克利夫顿山（娱乐街）","Clifton Hill is full of arcades and haunted houses.","克利夫顿山满是游戏厅和鬼屋。","","n"],
+["Falls Incline Railway","/ˈfɔːlz ˈɪnklaɪn ˈreɪlweɪ/","瀑布斜坡缆车","Take the Falls Incline Railway back up the hill.","坐斜坡缆车回到坡顶。","","n"],
+["WEGO","/ˈwiː ɡoʊ/","尼亚加拉观光公交","The WEGO bus stops near most attractions.","WEGO 公交在大多数景点附近都停。","","n"],
+["illumination","/ɪˌluːmɪˈneɪʃən/","灯光照明","The falls illumination starts after dark.","瀑布彩灯天黑后开始。"],
+["Winter Festival of Lights","/ˈwɪntər ˈfestɪvəl əv ˈlaɪts/","冬季灯光节","The Winter Festival of Lights runs from November to January.","冬季灯光节从 11 月持续到 1 月。","","n"],
+["Niagara City Cruises","/naɪˈæɡrə ˈsɪti ˈkruːzɪz/","尼亚加拉城市游船","The Niagara City Cruises boat goes right up to the Horseshoe Falls.","游船开到马蹄瀑布正下方。","","n"],
+["poncho","/ˈpɑːntʃoʊ/","雨披","They give you a red poncho on the boat.","船上会发红色雨披。"],
+["mist","/mɪst/","水雾","You'll get wet from the mist even with a poncho.","穿了雨披也会被水雾打湿。"],
+["soaked","/soʊkt/","湿透的","I'm completely soaked!","我全身湿透了！"],
+["GO Transit","/ˈɡoʊ ˈtrænzɪt/","安大略 GO 交通","GO Transit buses run from Niagara Falls to Union Station.","GO 巴士从尼亚加拉开到联合车站。","","n"],
+["UP Express","/ˌjuː ˈpiː ɪkˈspres/","联合车站-皮尔逊机场快线","The UP Express takes twenty-five minutes to Pearson.","UP 快线 25 分钟到皮尔逊机场。","UP = Union Pearson。","n"],
+["Union Station","/ˈjuːnjən ˈsteɪʃən/","多伦多联合车站","Let's store our bags near Union Station.","我们把行李寄存在联合车站附近。","","n"],
+["Terminal Link","/ˈtɜːrmɪnəl ˈlɪŋk/","航站楼间小火车","Take the Terminal Link train from Terminal 1 to Terminal 3.","坐航站楼小火车从 1 号到 3 号航站楼。","","n"],
+["Mississauga","/ˌmɪsɪˈsɔːɡə/","密西沙加","Our airport hotel is technically in Mississauga.","我们的机场酒店其实在密西沙加。","","n"],
+["Toronto","/təˈrɑːntoʊ/","多伦多","Welcome to Toronto!","欢迎来到多伦多！","当地人常快读成「Tronno」。","n"],
+["Distillery District","/dɪˈstɪləri ˈdɪstrɪkt/","酿酒厂区","The Christmas Market is in the Distillery District.","圣诞市集在酿酒厂区。","","n"],
+["Christmas Market","/ˈkrɪsməs ˈmɑːrkɪt/","圣诞市集","The Christmas Market usually opens in mid-November.","圣诞市集通常 11 月中旬开幕。"],
+["cobblestone","/ˈkɑːbəlstoʊn/","鹅卵石","Wear good shoes on the cobblestone streets.","鹅卵石路要穿好走的鞋。"],
+["toque","/tuːk/","（加拿大）毛线帽","It's cold, put on your toque.","冷，戴上毛线帽。","加拿大说法，和 beanie 一样。"],
+["loonie","/ˈluːni/","1 加元硬币","A loonie is a one-dollar coin with a bird on it.","loonie 是印着潜鸟的一加元硬币。","2 加元硬币叫 toonie。"]
+]},
+{ id:"health", zh:"药品与健康", en:"Health", when:"全程 · 高原、晕船、暴走", band:"all", range:null, words:[
+["pharmacy","/ˈfɑːrməsi/","药店","Is there a pharmacy near here?","附近有药店吗？","西语 farmacia，葡语 farmácia。"],
+["prescription","/prɪˈskrɪpʃən/","处方","Do I need a prescription for this?","这个需要处方吗？"],
+["over the counter","/ˌoʊvər ðə ˈkaʊntər/","非处方（可直接买）","Is meclizine available over the counter?","美克洛嗪能直接买吗？","缩写 OTC。"],
+["dosage","/ˈdoʊsɪdʒ/","剂量","What's the right dosage for altitude sickness?","治高反的正确剂量是多少？"],
+["side effect","/ˈsaɪd ɪˌfekt/","副作用","Tingling fingers are a common side effect of Diamox.","手指发麻是 Diamox 常见的副作用。"],
+["allergic to","/əˈlɜːrdʒɪk tə/","对……过敏","I'm allergic to sulfa drugs.","我对磺胺类药物过敏。"],
+["sulfa drugs","/ˈsʌlfə ˌdrʌɡz/","磺胺类药物","Diamox is related to sulfa drugs.","Diamox 和磺胺类药物有关。"],
+["Diamox","/ˈdaɪəmɑːks/","乙酰唑胺（高原药）","Start taking Diamox the day before you go up.","上高原前一天开始吃 Diamox。","通用名 acetazolamide /əˌsiːtəˈzɑːləmaɪd/。","n"],
+["scopolamine patch","/skoʊˈpɑːləmiːn ˌpætʃ/","东莨菪碱晕船贴","Put the scopolamine patch behind your ear.","把晕船贴贴在耳后。"],
+["meclizine","/ˈmeklɪziːn/","美克洛嗪（晕船药）","Meclizine makes you less drowsy than Dramamine.","美克洛嗪没有乘晕宁那么犯困。","美国品牌名 Bonine。"],
+["Dramamine","/ˈdræməmiːn/","乘晕宁（茶苯海明）","Take Dramamine thirty minutes before the boat leaves.","开船前 30 分钟吃乘晕宁。","","n"],
+["drowsy","/ˈdraʊzi/","昏昏欲睡的","This medicine may make you drowsy.","这药可能让你犯困。"],
+["nauseous","/ˈnɔːʃəs/","恶心想吐的","I feel nauseous. I need some fresh air.","我想吐，需要透透气。"],
+["dizzy","/ˈdɪzi/","头晕的","I feel dizzy when I stand up.","我一站起来就头晕。"],
+["headache","/ˈhedeɪk/","头痛","A headache is the first sign of altitude sickness.","头痛是高反的第一个信号。"],
+["diarrhea","/ˌdaɪəˈriːə/","腹泻","Do you have anything for diarrhea?","有治腹泻的药吗？"],
+["oral rehydration salts","/ˈɔːrəl ˌriːhaɪˈdreɪʃən ˌsɔːlts/","口服补液盐","Mix the oral rehydration salts with clean water.","把口服补液盐兑进干净的水里。"],
+["painkiller","/ˈpeɪnˌkɪlər/","止痛药","Can I take a painkiller with this medicine?","这个药能和止痛药一起吃吗？"],
+["ibuprofen","/ˌaɪbjuːˈproʊfən/","布洛芬","Ibuprofen can help with an altitude headache.","布洛芬能缓解高原头痛。"],
+["blister","/ˈblɪstər/","水泡","I got a blister from walking all day.","走了一天磨出水泡了。"],
+["insect repellent","/ˈɪnsekt rɪˈpelənt/","驱蚊液","Bring insect repellent to Aguas Calientes.","去热水镇带上驱蚊液。"],
+["mosquito bite","/məˈskiːtoʊ ˌbaɪt/","蚊子咬的包","These mosquito bites are so itchy.","这些蚊子包好痒。"],
+["travel insurance","/ˈtrævəl ɪnˈʃʊrəns/","旅行保险","My travel insurance covers emergency evacuation.","我的旅行保险包含紧急撤离。"],
+["medical evacuation","/ˈmedɪkəl ɪˌvækjuˈeɪʃən/","医疗撤离","Antarctic cruises require medical evacuation coverage.","南极邮轮要求保险含医疗撤离。"],
+["emergency","/ɪˈmɜːrdʒənsi/","紧急情况","In an emergency, call 911 in the US and Canada.","在美加遇紧急情况拨 911。"]
+]},
+{ id:"money", zh:"钱、交通与安全", en:"Money & Safety", when:"全程 · 6种货币", band:"all", range:null, words:[
+["small bills","/ˌsmɔːl ˈbɪlz/","小面额钞票","Please bring small bills for tips.","请带点小面额钞票付小费。"],
+["crisp bills","/ˌkrɪsp ˈbɪlz/","崭新无折痕的钞票","In Argentina, only crisp, new dollar bills get a good rate.","在阿根廷只有崭新的美钞能换到好价。"],
+["exchange rate","/ɪksˈtʃeɪndʒ ˌreɪt/","汇率","What's the exchange rate today?","今天汇率多少？"],
+["MEP rate","/ˌem iː ˈpiː ˌreɪt/","MEP 汇率（阿根廷）","Foreign cards are charged close to the MEP rate.","外国信用卡按接近 MEP 的汇率结算。"],
+["contactless","/ˈkɑːntæktləs/","非接触式（挥卡）","Can I pay contactless?","可以挥卡付款吗？"],
+["tap to pay","/ˌtæp tə ˈpeɪ/","碰一下支付","Just tap to pay on the machine.","在机器上碰一下就付了。"],
+["PIN","/pɪn/","密码","Please enter your PIN.","请输入密码。","读作一个词 pin，不读 P-I-N。"],
+["ATM fee","/ˌeɪ tiː ˈem ˌfiː/","取款手续费","The ATM fee in Argentina is very high.","阿根廷 ATM 手续费很高。"],
+["tip","/tɪp/","小费","How much should I tip in New York?","在纽约该给多少小费？","美国餐厅一般 18–20%。"],
+["gratuity","/ɡrəˈtuːəti/","小费（正式说法）","Is gratuity included in the bill?","账单里含小费了吗？"],
+["the check","/ðə ˈtʃek/","（餐厅）账单","Could we get the check, please?","请给我们结账。","英式说 the bill。"],
+["split the bill","/ˌsplɪt ðə ˈbɪl/","分开付账","Can we split the bill?","我们能分开付吗？"],
+["receipt","/rɪˈsiːt/","收据","Can I have a receipt, please?","能给我一张收据吗？","p 不发音：ri-SEET。"],
+["keep the change","/ˌkiːp ðə ˈtʃeɪndʒ/","不用找了","Thanks, keep the change.","谢谢，不用找了。"],
+["meter","/ˈmiːtər/","（出租车）计价器","Could you turn on the meter, please?","请打开计价器。"],
+["fare","/fɛr/","车费，票价","How much is the fare to the airport?","去机场多少钱？"],
+["pickup point","/ˈpɪkʌp ˌpɔɪnt/","上车点","Where is the pickup point for Uber?","Uber 上车点在哪？"],
+["pickpocket","/ˈpɪkpɑːkɪt/","扒手","Watch out for pickpockets on the beach.","海滩上小心扒手。"],
+["scam","/skæm/","骗局","Changing money on the street is often a scam.","街头换钱常常是骗局。"],
+["belongings","/bɪˈlɔːŋɪŋz/","随身物品","Keep an eye on your belongings.","看好你的随身物品。"],
+["crossbody bag","/ˈkrɔːsbɑːdi ˌbæɡ/","斜挎包","A crossbody bag is safer than a backpack in Rio.","在里约斜挎包比背包安全。"],
+["luggage storage","/ˈlʌɡɪdʒ ˌstɔːrɪdʒ/","行李寄存（店）","I booked luggage storage near Union Station until 9 p.m.","我订了联合车站附近的行李寄存，到晚上 9 点。"]
+]}
+];
+
+</script>
+<script>
+(function(){
+const TRIP_START="2026-10-21", TRIP_END="2026-11-21";
+const LANG={"n:es":["es-ES","西语"],"n:pt":["pt-BR","葡语"],"n:fr":["fr-FR","法语"]};
+const SAY={"9/11 Memorial":"nine eleven Memorial","76ers":"seventy-sixers","30th Street Station":"thirtieth Street Station","OMNY":"omni","IAATO":"eye ah toe","MoMA":"moma","PIN":"pin","WEGO":"we go","Warner Bros. Studio Tour":"Warner Brothers Studio Tour","MEP rate":"M E P rate","ATM fee":"A T M fee","TCL Chinese Theatre":"T C L Chinese Theatre","UP Express":"U P Express","SEPTA":"septa","NJ Transit":"N J Transit","HX Hurtigruten Expeditions":"H X Hurtigruten Expeditions","MS Fridtjof Nansen":"M S Fritt-yof Nansen","Tom Bradley International Terminal":"Tom Bradley International Terminal"};
+
+/* ---------- 数据 ---------- */
+const ALL=[];
+CHAPTERS.forEach(c=>{c.items=c.words.map(a=>{const it={id:c.id+"|"+a[0],ch:c,w:a[0],ipa:a[1],zh:a[2],ex:a[3],exZh:a[4],tip:a[5]||"",kind:a[6]||""};ALL.push(it);return it;});});
+const BYID=Object.fromEntries(ALL.map(x=>[x.id,x]));
+
+/* ---------- 状态 ---------- */
+const store={get(k,d){try{const v=localStorage.getItem("aw:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("aw:"+k,JSON.stringify(v))}catch(e){}}};
+let prog=store.get("prog",{m:{},t:0});            // m: 已记住的词 id
+const ui=Object.assign({ch:null,mode:"list",filter:"all",q:"",dir:"en",auto:true,quizAudio:false},store.get("ui",{}));
+ui.q="";
+const isDone=id=>!!prog.m[id];
+function setDone(id,v){if(v)prog.m[id]=1;else delete prog.m[id];prog.t=Date.now();store.set("prog",prog);queueRemote();renderMeter();renderRail();}
+function saveUI(){store.set("ui",{ch:ui.ch,mode:ui.mode,filter:ui.filter,dir:ui.dir,auto:ui.auto,quizAudio:ui.quizAudio});}
+
+/* ---------- 跨设备同步（Claude 账户） ---------- */
+let remote=null,remoteTimer=null;
+const syncEl=document.getElementById("sync");
+function queueRemote(){if(!remote)return;clearTimeout(remoteTimer);remoteTimer=setTimeout(async()=>{try{await remote.set({m:Object.keys(prog.m),t:prog.t});syncEl.textContent="已同步到你的账户";}catch(e){syncEl.textContent="同步暂时失败，进度已存在本机";}},1200);}
+async function initRemote(){
+  try{
+    if(!window.claude||!window.claude.use)return;
+    const [user,db]=await Promise.all([window.claude.use("user"),window.claude.use("db")]);
+    if(!user||!db)return;
+    const uid=await user.id(); if(!uid)return;
+    remote=db.doc("data/users/"+uid+"/progress");
+    const snap=await remote.get();
+    const d=snap.exists?snap.data():null;
+    if(d&&Array.isArray(d.m)&&(d.t||0)>(prog.t||0)){prog={m:Object.fromEntries(d.m.filter(id=>BYID[id]).map(id=>[id,1])),t:d.t};store.set("prog",prog);renderAll();}
+    else if(prog.t&&(!d||(d.t||0)<prog.t)){queueRemote();}
+    syncEl.textContent="进度跟随你的 Claude 账户，手机电脑通用";
+  }catch(e){syncEl.textContent="";}
+}
+
+/* ---------- 发音 ---------- */
+const canSpeak="speechSynthesis" in window;
+let voices=[];
+function loadVoices(){try{voices=speechSynthesis.getVoices()}catch(e){}}
+if(canSpeak){loadVoices();try{speechSynthesis.onvoiceschanged=loadVoices}catch(e){}}
+function pickVoice(lang){
+  const norm=v=>v.lang.replace("_","-");
+  const exact=voices.filter(v=>norm(v)===lang);
+  const pref=exact.find(v=>/Samantha|Google US|Ava|Allison|Luciana|Monica|Paulina|Thomas|Amélie/i.test(v.name));
+  return pref||exact[0]||voices.find(v=>norm(v).startsWith(lang.slice(0,2)));
+}
+function speak(text,lang,rate){
+  if(!canSpeak)return;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang=lang||"en-US"; u.rate=rate||0.92;
+    const v=pickVoice(u.lang); if(v)u.voice=v;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+const langOf=it=>(LANG[it.kind]||["en-US"])[0];
+const sayWord=(it,slow)=>speak(SAY[it.w]||it.w,langOf(it),slow?0.55:0.9);
+const sayEx=it=>speak(it.ex,"en-US",0.9);
+const ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+
+/* ---------- 工具 ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function highlight(ex,w){
+  const base=w.replace(/\s*\(.*?\)/g,"").replace(/^(the|a|an)\s+/i,"");
+  const parts=base.split(/[\s-]+/).filter(Boolean).map(p=>{let s=p.replace(/[.']/g,"");if(s.length>5)s=s.slice(0,-2);return s.replace(/[.*+?^${}()|[\]\\\/]/g,"\\$&")+"[\\w'’.]*";});
+  const safe=esc(ex);
+  if(!parts.length)return safe;
+  try{const re=new RegExp("("+parts.join("[\\s-]+")+")","i");return safe.replace(re,"<mark>$1</mark>");}catch(e){return safe;}
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const TODAY=ymd(new Date());
+const dayDiff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
+function ranges(c){if(!c.range)return[];return Array.isArray(c.range[0])?c.range:[c.range];}
+const isToday=c=>ranges(c).some(([s,e])=>TODAY>=s&&TODAY<=e);
+function nextStop(){let best=null;CHAPTERS.forEach(c=>ranges(c).forEach(([s])=>{if(s>TODAY&&(!best||s<best.s))best={c,s};}));return best;}
+const scopeItems=()=>ui.ch==="all"?ALL:(CHAPTERS.find(c=>c.id===ui.ch)||CHAPTERS[0]).items;
+
+/* ---------- 头部 ---------- */
+function renderToday(){
+  const el=$("#today"); const tc=CHAPTERS.filter(c=>c.range&&isToday(c)); const ns=nextStop();
+  if(TODAY<TRIP_START){const n=dayDiff(TODAY,TRIP_START);el.innerHTML="<strong>距出发还有 "+n+" 天</strong> · 10/21 香港 → 仁川，先背「机场与航班」";}
+  else if(TODAY>TRIP_END){el.innerHTML="<strong>旅程已结束</strong> · 32 天，跨越 108 个纬度";}
+  else{const n=dayDiff(TRIP_START,TODAY)+1;el.innerHTML="<strong>第 "+n+" / 32 天</strong> · "+(tc.length?"今天："+tc.map(c=>esc(c.zh)).join("、"):"在路上")+(ns?" · 下一站 "+esc(ns.c.zh)+"（"+ns.s.slice(5).replace("-","/")+"）":"");}
+}
+function renderMeter(){const n=ALL.filter(x=>isDone(x.id)).length;$("#mcount").textContent="已记住 "+n+" / "+ALL.length;$("#mbar").style.width=(n/ALL.length*100).toFixed(1)+"%";}
+function renderRail(){
+  const ns=nextStop();
+  const chips=[{id:"all",zh:"全部",when:"15 个场景",band:"all",items:ALL}].concat(CHAPTERS);
+  $("#rail").innerHTML=chips.map(c=>{
+    const done=c.items.filter(x=>isDone(x.id)).length;
+    let badge="";
+    if(c.range&&isToday(c))badge='<span class="badge">今天</span>';
+    else if(ns&&ns.c===c&&TODAY>=TRIP_START)badge='<span class="badge">下一站</span>';
+    return '<button class="chip" data-ch="'+c.id+'" data-band="'+c.band+'" aria-pressed="'+(ui.ch===c.id)+'">'+badge+'<span class="n">'+esc(c.zh)+'</span><span class="d">'+esc(c.when)+'</span><span class="p">'+done+" / "+c.items.length+"</span></button>";
+  }).join("");
+}
+$("#rail").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;ui.ch=b.dataset.ch;saveUI();resetSessions();renderRail();renderMain();window.scrollTo({top:0,behavior:"smooth"});});
+$("#tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-mode]");if(!b)return;ui.mode=b.dataset.mode;saveUI();resetSessions();renderTabs();renderMain();});
+function renderTabs(){document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.mode===ui.mode)));}
+
+function chHead(){
+  if(ui.ch==="all")return '<div class="ch-head"><h2>全部词汇</h2><span class="en">All 15 scenes</span><span class="meta">'+ALL.length+' 词</span></div>';
+  const c=CHAPTERS.find(x=>x.id===ui.ch);
+  return '<div class="ch-head"><h2>'+esc(c.zh)+'</h2><span class="en">'+esc(c.en)+'</span><span class="meta">'+esc(c.when)+(c.lat?" · "+esc(c.lat):"")+" · "+c.items.length+" 词</span></div>";
+}
+
+/* ---------- 单词表 ---------- */
+function cardHTML(it){
+  const loc=LANG[it.kind];
+  const tag=loc?'<span class="tag loc">'+loc[1]+'</span>':(it.kind?'<span class="tag">专有名词</span>':"");
+  const sp=canSpeak?'<button class="say" data-say="w" aria-label="播放发音">'+ICON+'</button><button class="say slow" data-say="slow" aria-label="慢速播放">慢</button>':"";
+  return '<article class="card'+(isDone(it.id)?" done":"")+'" data-id="'+esc(it.id)+'">'+
+    '<div class="w-row"><span class="word">'+esc(it.w)+'</span>'+tag+'<button class="mark" data-mark aria-pressed="'+isDone(it.id)+'">'+(isDone(it.id)?"已记住":"记住了")+'</button></div>'+
+    '<div class="ipa-row"><span class="ipa">'+esc(it.ipa)+'</span>'+sp+'</div>'+
+    '<div class="zh">'+esc(it.zh)+'</div>'+
+    '<div class="ex">'+(canSpeak?'<button class="say" data-say="ex" aria-label="播放例句">'+ICON+'</button>':"")+'<span>'+highlight(it.ex,it.w)+'</span></div>'+
+    '<div class="exzh">'+esc(it.exZh)+'</div>'+
+    (it.tip?'<div class="tip"><b>记忆</b>'+esc(it.tip)+'</div>':"")+
+  '</article>';
+}
+function listItems(){
+  const q=ui.q.trim().toLowerCase();
+  let items=q?ALL:scopeItems();
+  if(q)items=items.filter(x=>(x.w+" "+x.zh+" "+x.ex).toLowerCase().includes(q));
+  if(ui.filter==="todo")items=items.filter(x=>!isDone(x.id));
+  else if(ui.filter==="done")items=items.filter(x=>isDone(x.id));
+  else if(ui.filter==="name")items=items.filter(x=>x.kind);
+  return items;
+}
+function renderList(){
+  const m=$("#main");
+  m.innerHTML=chHead()+
+    '<div class="tools"><input class="search" id="search" type="search" placeholder="搜索全部词汇：英文、中文或例句" value="'+esc(ui.q)+'">'+
+    '<div class="seg" id="filter">'+[["all","全部"],["todo","没记住"],["done","已记住"],["name","专有名词"]].map(([k,l])=>'<button data-f="'+k+'" aria-pressed="'+(ui.filter===k)+'">'+l+"</button>").join("")+"</div></div>"+
+    '<div class="grid" id="grid"></div>';
+  fillGrid();
+  $("#search").addEventListener("input",e=>{ui.q=e.target.value;fillGrid();});
+  $("#filter").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;ui.filter=b.dataset.f;saveUI();document.querySelectorAll("#filter button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));fillGrid();});
+}
+function fillGrid(){
+  const items=listItems();
+  $("#grid").innerHTML=items.length?items.map(cardHTML).join(""):'<div class="empty">'+(ui.filter==="todo"?"这一组全部记住了，可以换个场景或做个测验。":"没有找到匹配的词。")+"</div>";
+}
+document.addEventListener("click",e=>{
+  const card=e.target.closest(".card"); if(!card)return;
+  const it=BYID[card.dataset.id]; if(!it)return;
+  const s=e.target.closest("[data-say]");
+  if(s){const k=s.dataset.say;if(k==="ex")sayEx(it);else sayWord(it,k==="slow");return;}
+  if(e.target.closest("[data-mark]")){
+    const v=!isDone(it.id);setDone(it.id,v);
+    card.classList.toggle("done",v);const b=card.querySelector("[data-mark]");b.setAttribute("aria-pressed",String(v));b.textContent=v?"已记住":"记住了";
+    if(ui.filter==="todo"&&v){setTimeout(()=>{if(card.isConnected){card.remove();if(!$("#grid").children.length)fillGrid();}},450);}
+  }
+});
+
+/* ---------- 闪卡 ---------- */
+let fs=null;
+function newFlash(){const pool=scopeItems().filter(x=>!isDone(x.id));fs={deck:shuffle(pool.length?pool:scopeItems()),i:0,flipped:false,known:0,total:0,allDone:!pool.length};fs.total=fs.deck.length;}
+function renderFlash(){
+  if(!fs)newFlash();
+  const m=$("#main");
+  const it=fs.deck[0];
+  const opts='<div class="opts"><div class="seg" id="dir"><button data-d="en" aria-pressed="'+(ui.dir==="en")+'">看英文想中文</button><button data-d="zh" aria-pressed="'+(ui.dir==="zh")+'">看中文想英文</button></div>'+
+    (canSpeak?'<div class="seg"><button id="auto" aria-pressed="'+ui.auto+'">自动发音</button></div>':"")+"</div>";
+  if(!it){
+    m.innerHTML=chHead()+'<div class="stage">'+opts+'<div class="flash" style="cursor:default"><div class="inner"><div class="bigzh">这一轮完成</div><div class="exzh">新记住 '+fs.known+" 个词。</div></div></div>"+
+      '<button class="btn primary" id="again">再来一轮</button></div>';
+    $("#again").onclick=()=>{newFlash();renderFlash();};bindFlashOpts();return;
+  }
+  const loc=LANG[it.kind];
+  const front=ui.dir==="en"
+    ?'<div class="big">'+esc(it.w)+'</div><div class="ipa">'+esc(it.ipa)+(loc?" · "+loc[1]:"")+"</div>"
+    :'<div class="bigzh">'+esc(it.zh)+'</div><div class="exzh">'+esc(it.exZh)+"</div>";
+  const back=ui.dir==="en"
+    ?'<div class="bigzh">'+esc(it.zh)+'</div><div class="ex"><span>'+highlight(it.ex,it.w)+'</span></div><div class="exzh">'+esc(it.exZh)+"</div>"
+    :'<div class="big">'+esc(it.w)+'</div><div class="ipa">'+esc(it.ipa)+'</div><div class="ex"><span>'+highlight(it.ex,it.w)+"</span></div>";
+  m.innerHTML=chHead()+'<div class="stage">'+opts+
+    '<div class="flash" id="card" role="button" tabindex="0" aria-label="点击翻面"><span class="count">'+(fs.total-fs.deck.length+1)+" / "+fs.total+(fs.allDone?" · 复习已记住":"")+'</span><div class="inner">'+front+(fs.flipped?'<div style="height:6px"></div>'+back+(it.tip?'<div class="tip"><b>记忆</b>'+esc(it.tip)+"</div>":""):"")+'</div><span class="hint">'+(fs.flipped?"":"点卡片翻面")+"</span></div>"+
+    (canSpeak?'<div class="opts"><button class="say" id="fsay" aria-label="播放发音">'+ICON+'</button><button class="say slow" id="fslow">慢</button><button class="say slow" id="fex">例句</button></div>':"")+
+    '<div class="actions"><button class="btn no" id="no">还不熟</button><button class="btn yes" id="yes">记住了</button></div>'+
+    '<div class="kbd">键盘：空格翻面 · ← 还不熟 · → 记住了</div></div>';
+  bindFlashOpts();
+  $("#card").onclick=()=>{fs.flipped=!fs.flipped;renderFlash();if(fs.flipped&&ui.dir==="zh"&&ui.auto)sayWord(it);};
+  if(canSpeak){$("#fsay").onclick=()=>sayWord(it);$("#fslow").onclick=()=>sayWord(it,true);$("#fex").onclick=()=>sayEx(it);}
+  $("#no").onclick=()=>flashAnswer(false);$("#yes").onclick=()=>flashAnswer(true);
+  if(!fs.flipped&&ui.dir==="en"&&ui.auto&&!fs.spoke){fs.spoke=true;sayWord(it);}
+}
+function bindFlashOpts(){
+  const d=$("#dir");if(d)d.onclick=e=>{const b=e.target.closest("button");if(!b)return;ui.dir=b.dataset.d;saveUI();fs.flipped=false;fs.spoke=false;renderFlash();};
+  const a=$("#auto");if(a)a.onclick=()=>{ui.auto=!ui.auto;saveUI();a.setAttribute("aria-pressed",String(ui.auto));};
+}
+function flashAnswer(ok){
+  const it=fs.deck.shift(); if(!it)return;
+  if(ok){if(!isDone(it.id)){setDone(it.id,true);fs.known++;}}
+  else{if(isDone(it.id))setDone(it.id,false);fs.deck.splice(Math.min(fs.deck.length,3+Math.floor(Math.random()*3)),0,it);fs.total++;}
+  fs.flipped=false;fs.spoke=false;renderFlash();
+}
+document.addEventListener("keydown",e=>{
+  if(ui.mode!=="flash"||!fs||e.target.tagName==="INPUT")return;
+  if(e.key===" "){e.preventDefault();const c=$("#card");if(c)c.click();}
+  else if(e.key==="ArrowRight"&&$("#yes"))flashAnswer(true);
+  else if(e.key==="ArrowLeft"&&$("#no"))flashAnswer(false);
+});
+
+/* ---------- 测验 ---------- */
+let qs=null;
+function newQuiz(){
+  const pool=scopeItems();
+  const todo=shuffle(pool.filter(x=>!isDone(x.id))),done=shuffle(pool.filter(x=>isDone(x.id)));
+  const qsItems=todo.concat(done).slice(0,Math.min(10,pool.length));
+  qs={list:shuffle(qsItems),i:0,score:0,missed:[],answered:null};
+  qs.list.forEach(it=>{
+    const same=shuffle(pool.filter(x=>x!==it&&x.zh!==it.zh));
+    const others=same.length>=3?same:same.concat(shuffle(ALL.filter(x=>x!==it&&!same.includes(x)&&x.zh!==it.zh)));
+    it._choices=shuffle([it].concat(others.slice(0,3)));
+  });
+}
+function renderQuiz(){
+  if(!qs)newQuiz();
+  const m=$("#main");
+  const opts='<div class="opts">'+(canSpeak?'<div class="seg"><button id="qa" aria-pressed="'+ui.quizAudio+'">听音选义（隐藏单词）</button></div>':"")+"</div>";
+  if(qs.i>=qs.list.length){
+    m.innerHTML=chHead()+'<div class="stage"><div class="result"><div class="exzh">本轮得分</div><div class="score">'+qs.score+" / "+qs.list.length+'</div><div class="exzh">'+(qs.missed.length?"答错的词已标为「没记住」，会优先出现在闪卡里。":"全对，这一组可以放心了。")+"</div>"+
+      (qs.missed.length?'<div class="missed">'+qs.missed.map(it=>'<div><span class="word">'+esc(it.w)+'</span> <span class="ipa">'+esc(it.ipa)+'</span><div>'+esc(it.zh)+"</div></div>").join("")+"</div>":"")+
+      '</div><button class="btn primary" id="again">再测一轮</button></div>';
+    $("#again").onclick=()=>{newQuiz();renderQuiz();};return;
+  }
+  const it=qs.list[qs.i];const hide=ui.quizAudio&&canSpeak&&qs.answered==null;
+  m.innerHTML=chHead()+'<div class="stage">'+opts+'<div class="q"><span class="count">第 '+(qs.i+1)+" / "+qs.list.length+" 题 · 得分 "+qs.score+"</span>"+
+    (hide?'<button class="btn primary" id="qplay" style="width:auto;padding:12px 22px">播放发音</button>':'<div class="big word" style="font-size:30px">'+esc(it.w)+'</div><div class="ipa">'+esc(it.ipa)+"</div>")+
+    (canSpeak&&!hide?'<button class="say" id="qplay" aria-label="播放发音">'+ICON+"</button>":"")+
+    "</div>"+'<div class="choices">'+it._choices.map((c,k)=>{let cls="choice";if(qs.answered!=null){if(c===it)cls+=" right";else if(k===qs.answered)cls+=" wrong";}return '<button class="'+cls+'" data-k="'+k+'"'+(qs.answered!=null?" disabled":"")+">"+esc(c.zh)+"</button>";}).join("")+"</div>"+
+    (qs.answered!=null?'<div class="feedback"><div><span class="word" style="font-size:18px">'+esc(it.w)+'</span> <span class="ipa">'+esc(it.ipa)+'</span></div><div class="ex"><span>'+highlight(it.ex,it.w)+'</span></div><div class="exzh">'+esc(it.exZh)+'</div></div><button class="btn primary" id="qnext">'+(qs.i+1<qs.list.length?"下一题":"看结果")+"</button>":"")+
+    "</div>";
+  const qa=$("#qa");if(qa)qa.onclick=()=>{ui.quizAudio=!ui.quizAudio;saveUI();renderQuiz();if(ui.quizAudio&&qs.answered==null)sayWord(it);};
+  const qp=$("#qplay");if(qp)qp.onclick=()=>sayWord(it);
+  document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+    if(qs.answered!=null)return;const k=+b.dataset.k;qs.answered=k;
+    if(it._choices[k]===it)qs.score++;else{qs.missed.push(it);if(isDone(it.id))setDone(it.id,false);}
+    renderQuiz();sayWord(it);
+  });
+  const nx=$("#qnext");if(nx)nx.onclick=()=>{qs.i++;qs.answered=null;renderQuiz();const n=qs.list[qs.i];if(n&&ui.quizAudio)sayWord(n);};
+  if(hide&&!qs.spoke){qs.spoke=qs.i+1;}
+}
+
+function resetSessions(){fs=null;qs=null;}
+function renderMain(){if(ui.mode==="flash")renderFlash();else if(ui.mode==="quiz")renderQuiz();else renderList();}
+function renderAll(){renderToday();renderMeter();renderRail();renderTabs();renderMain();}
+
+/* 默认打开今天所在的场景 */
+if(!ui.ch||(ui.ch!=="all"&&!CHAPTERS.find(c=>c.id===ui.ch))){
+  const tc=CHAPTERS.find(c=>c.range&&isToday(c));ui.ch=tc?tc.id:"air";
+}
+renderAll();
+const active=document.querySelector('.chip[aria-pressed="true"]');if(active)active.scrollIntoView({block:"nearest",inline:"center"});
+setTimeout(initRemote,0);
+})();
+</script>
+
+</body>
+</html>

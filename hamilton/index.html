@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>汉密尔顿单词本</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Charis+SIL:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+SC:wght@600;900&display=swap">
+<style>
+/* Layout: 一条从北纬到南极的纬度轨道（章节）+ 下方单列学习区。色彩取自行程单的纬度带：金=热带，石青=中纬，冰蓝=极地 */
+:root{
+  --bg:#EEF2F3; --surface:#FFFFFF; --sunk:#E3EAEC; --ink:#10212E; --muted:#58697A; --line:#D3DDE1;
+  --ice:#1F6F99; --ice-soft:#DCEEF6; --gold:#A77A1E; --gold-soft:#F5EBD4; --slate:#4B6476; --polar:#3B9CC9;
+  --good:#2C7A52; --good-soft:#DDF0E5; --bad:#B4483A; --bad-soft:#F6E1DD;
+  --f-word:"Charis SIL", "Charis", Georgia, "Times New Roman", serif;
+  --f-zh:"Noto Serif SC", "Songti SC", "STSong", serif;
+  --f-body:-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A141C; --surface:#111F2A; --sunk:#0D1922; --ink:#E4EDF2; --muted:#93A7B5; --line:#223543;
+  --ice:#7CC3E6; --ice-soft:#16303F; --gold:#E2B65C; --gold-soft:#2E2715; --slate:#9DB4C4; --polar:#8DD3F2;
+  --good:#6CC797; --good-soft:#14301F; --bad:#EE8B7C; --bad-soft:#3A1E1A; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0A141C; --surface:#111F2A; --sunk:#0D1922; --ink:#E4EDF2; --muted:#93A7B5; --line:#223543;
+  --ice:#7CC3E6; --ice-soft:#16303F; --gold:#E2B65C; --gold-soft:#2E2715; --slate:#9DB4C4; --polar:#8DD3F2;
+  --good:#6CC797; --good-soft:#14301F; --bad:#EE8B7C; --bad-soft:#3A1E1A; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ice);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* 头部 */
+header.top{padding-block:22px 6px}
+.route{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.04em;display:flex;flex-wrap:wrap;gap:4px 10px}
+.route b{color:var(--ice);font-weight:500}
+h1{font-family:var(--f-zh);font-weight:900;font-size:clamp(28px,6vw,40px);line-height:1.15;margin:8px 0 4px;letter-spacing:.02em;text-wrap:balance}
+.status{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:10px}
+.today{font-size:14px}
+.today strong{font-family:var(--f-zh);font-weight:600}
+.meter{flex:1;min-width:180px;display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.bar{flex:1;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--good);border-radius:3px;transition:width .3s}
+.sync{font-size:12px;color:var(--muted)}
+
+/* 纬度轨道 */
+.rail-wrap{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px 8px;border-bottom:1px solid var(--line)}
+.rail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;scroll-snap-type:x proximity}
+.chip{flex:none;scroll-snap-align:start;position:relative;display:grid;gap:1px;text-align:left;min-width:118px;padding:8px 12px 8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer}
+.chip::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 3px 3px 0;background:var(--band,var(--muted))}
+.chip[data-band="trop"]{--band:var(--gold)} .chip[data-band="mid"]{--band:var(--slate)} .chip[data-band="polar"]{--band:var(--polar)} .chip[data-band="all"]{--band:var(--line)}
+.chip .n{font-weight:600;font-size:14px;white-space:nowrap}
+.chip .d{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.chip .p{font-family:var(--f-mono);font-size:11px;color:var(--good)}
+.chip[aria-pressed="true"]{border-color:var(--ice);background:var(--ice-soft)}
+.chip .badge{position:absolute;top:-7px;right:8px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px;background:var(--gold);color:var(--surface)}
+.tabs{display:flex;gap:4px;margin-top:10px;background:var(--sunk);border-radius:10px;padding:3px;width:max-content;max-width:100%}
+.tabs button{border:0;background:transparent;padding:6px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+main{padding-block:16px 60px}
+.ch-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:12px}
+.ch-head h2{font-family:var(--f-zh);font-weight:600;font-size:22px;margin:0}
+.ch-head .en{font-family:var(--f-word);font-style:italic;color:var(--muted);font-size:16px}
+.ch-head .meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-left:auto}
+
+/* 工具条 */
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.search{flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font:inherit;color:var(--ink)}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+
+/* 单词卡 */
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:820px){.grid{grid-template-columns:1fr 1fr}}
+.card{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px 12px;display:grid;gap:6px;align-content:start}
+.card.done{background:color-mix(in srgb,var(--surface) 70%,var(--good-soft))}
+.w-row{display:flex;align-items:flex-start;gap:8px}
+.word{font-family:var(--f-word);font-weight:700;font-size:22px;line-height:1.2;overflow-wrap:anywhere}
+.tag{flex:none;margin-top:4px;font-size:11px;padding:1px 7px;border-radius:6px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.tag.loc{background:var(--gold-soft);color:var(--gold)}
+.mark{margin-left:auto;flex:none;border:1px solid var(--line);background:transparent;border-radius:8px;padding:3px 9px;font-size:12px;cursor:pointer;color:var(--muted);white-space:nowrap}
+.mark[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:var(--surface)}
+.ipa-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ipa{font-family:var(--f-word);font-size:17px;color:var(--ice)}
+.say{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ice);padding:0}
+.say svg{width:15px;height:15px}
+.say.slow{width:auto;border-radius:15px;padding:0 9px;font-size:12px;font-weight:600}
+.zh{font-size:16px;font-weight:600}
+.ex{font-family:var(--f-word);font-size:16px;line-height:1.45;display:flex;gap:6px;align-items:flex-start}
+.ex mark{background:var(--ice-soft);color:inherit;border-radius:3px;padding:0 2px}
+.ex .say{width:26px;height:26px;flex:none;margin-top:1px}
+.exzh{color:var(--muted);font-size:14px}
+.tip{font-size:13px;color:var(--ink);background:var(--gold-soft);border-radius:8px;padding:6px 10px}
+.tip b{color:var(--gold);margin-right:6px;font-weight:600}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+
+/* 闪卡 */
+.stage{max-width:560px;margin:0 auto;display:grid;gap:14px}
+.opts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.flash{min-height:300px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px 22px;display:grid;place-items:center;text-align:center;cursor:pointer;position:relative;user-select:none}
+.flash .count{position:absolute;top:12px;left:16px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.flash .hint{position:absolute;bottom:12px;left:0;right:0;font-size:12px;color:var(--muted)}
+.flash .big{font-family:var(--f-word);font-weight:700;font-size:clamp(28px,7vw,40px);line-height:1.15;overflow-wrap:anywhere}
+.flash .bigzh{font-family:var(--f-zh);font-weight:600;font-size:clamp(24px,6vw,32px)}
+.flash .inner{display:grid;gap:10px;justify-items:center;max-width:100%}
+.flash .ex{justify-content:center;text-align:left}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:13px;font-weight:600;font-size:15px;cursor:pointer}
+.btn.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.btn.yes{background:var(--good);border-color:var(--good);color:var(--surface)}
+.btn.primary{background:var(--ice);border-color:var(--ice);color:var(--surface)}
+.kbd{font-size:12px;color:var(--muted);text-align:center}
+
+/* 测验 */
+.q{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 20px;display:grid;gap:12px;text-align:center;justify-items:center}
+.q .count{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.choices{display:grid;gap:8px}
+.choice{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;font-size:15px;cursor:pointer}
+.choice.right{background:var(--good-soft);border-color:var(--good);color:var(--good);font-weight:600}
+.choice.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.choice:disabled{cursor:default}
+.feedback{background:var(--sunk);border-radius:12px;padding:12px 14px;display:grid;gap:4px}
+.result{text-align:center;display:grid;gap:8px;justify-items:center}
+.result .score{font-family:var(--f-word);font-weight:700;font-size:56px;line-height:1}
+.missed{width:100%;text-align:left;display:grid;gap:6px}
+.missed div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.missed .word{font-size:17px}
+footer{font-size:12px;color:var(--muted);padding-block:0 30px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="route" id="route"></div>
+    <h1 id="booktitle">汉密尔顿单词本</h1>
+    <div class="status">
+      <div class="today" id="today"></div>
+      <div class="meter"><span id="mcount">0 / 0</span><div class="bar"><i id="mbar" style="width:0"></i></div></div>
+      <span class="sync" id="sync"></span>
+    </div>
+  </header>
+</div>
+<div class="rail-wrap">
+  <div class="wrap">
+    <div class="rail" id="rail" role="toolbar" aria-label="按行程选择场景"></div>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-mode="list" aria-selected="true" id="tab-list">单词表</button>
+      <button role="tab" data-mode="flash" aria-selected="false" id="tab-flash">闪卡</button>
+      <button role="tab" data-mode="quiz" aria-selected="false" id="tab-quiz">测验</button>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <main id="main"></main>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+// [单词, 音标, 中文, 例句, 例句翻译, 剧情提示, 类型]  例句均为自编，不含歌词
+const BOOK = {
+  title:"汉密尔顿单词本",
+  route:'<span><b>Richard Rodgers Theatre</b></span><span>226 W 46th St</span><span>→ <b>2026.11.14 13:00</b></span><span>约 2 小时 45 分</span>',
+  target:"2026-11-14", targetLabel:"观演",
+  footer:"词表主干参考 Vocabulary.com 的《Hamilton: Act One / Act Two》生词表，按剧情顺序分组；例句为自编，帮助记住词义与剧情，不含歌词原文。音标为美式发音。"
+};
+const CHAPTERS = [
+{ id:"a1", zh:"开场 · 身世", en:"Alexander Hamilton", when:"第一幕 · 开场", band:"trop", range:null, words:[
+["bastard","/ˈbæstərd/","私生子（也作骂人话）","Hamilton was born a bastard, so many people looked down on him.","汉密尔顿是私生子，很多人瞧不起他。","开场第一句就用它介绍主角的出身。"],
+["orphan","/ˈɔːrfən/","孤儿","After his mother died, the young boy became an orphan.","母亲去世后，这个男孩成了孤儿。"],
+["providence","/ˈprɑːvɪdəns/","天意，上帝的安排","He believed providence had saved him for a reason.","他相信是天意让他活下来，必有用处。"],
+["impoverished","/ɪmˈpɑːvərɪʃt/","贫困的","He grew up on an impoverished island in the Caribbean.","他在加勒比海一个贫困的小岛上长大。"],
+["squalor","/ˈskwɑːlər/","肮脏贫困（的环境）","Despite the squalor around him, he read every book he could find.","尽管周围又脏又穷，他能找到的书全都读了。"],
+["scholar","/ˈskɑːlər/","学者，学问家","The poor clerk became a hero and a scholar.","这个穷小职员后来成了英雄和学者。"],
+["testament","/ˈtestəmənt/","证明；遗嘱","His essay was a testament to his talent.","他的文章证明了他的才华。"],
+["whence","/wens/","从何处（古雅用法）","Whence did this young genius come?","这个年轻天才是从哪儿来的？","古英语，现代说 from where。"],
+["astute","/əˈstuːt/","精明的，敏锐的","An astute merchant noticed the boy's talent.","一位精明的商人注意到了这个男孩的天赋。"],
+["destitute","/ˈdestɪtuːt/","一贫如洗的","His family was left destitute after his father walked away.","父亲离开后，他家一贫如洗。"],
+["restitution","/ˌrestɪˈtuːʃən/","赔偿，归还","He worked hard as if to make restitution for his past.","他拼命工作，好像要弥补自己的过去。"],
+["Caribbean","/ˌkærɪˈbiːən/","加勒比海（的）","Hamilton was born in the Caribbean, not in the colonies.","汉密尔顿出生在加勒比海，而不是北美殖民地。","也可读 /kəˈrɪbiən/，两种都对。","n"],
+["hurricane","/ˈhɜːrəkeɪn/","飓风","A hurricane destroyed his town when he was a teenager.","他十几岁时，一场飓风摧毁了他的小镇。","他把飓风写成文章发表，才被送到纽约。第二幕有同名歌《Hurricane》。"],
+["immigrant","/ˈɪmɪɡrənt/","移民","Hamilton was an immigrant who helped build a new nation.","汉密尔顿是一位移民，参与缔造了一个新国家。"],
+["Founding Father","/ˈfaʊndɪŋ ˈfɑːðər/","开国元勋","He is the Founding Father on the ten-dollar bill.","他就是印在十美元钞票上的那位开国元勋。"]
+]},
+{ id:"a2", zh:"纽约 · 革命前夜", en:"Aaron Burr, Sir · My Shot", when:"第一幕 · 1776 纽约", band:"mid", range:null, words:[
+["bursar","/ˈbɜːrsər/","（大学）财务主管","He went to the bursar to ask about faster classes.","他去找大学财务主管，问能不能加快修课。","剧里拿 Burr 和 bursar 的发音开了个玩笑。"],
+["redcoat","/ˈredkoʊt/","英国兵（红衫军）","The redcoats marched into New York.","英国红衫军开进了纽约。"],
+["revolutionary","/ˌrevəˈluːʃəneri/","革命者；革命的","The young revolutionaries met in a tavern at night.","年轻的革命者们晚上在酒馆聚会。"],
+["prodigy","/ˈprɑːdədʒi/","神童，奇才","Everyone agreed Hamilton was a prodigy.","大家都认为汉密尔顿是个奇才。"],
+["verse","/vɜːrs/","（说唱/歌词的）一段；诗","Each friend raps a verse about his dream.","每个朋友都唱一段说唱讲自己的梦想。"],
+["imminent","/ˈɪmɪnənt/","即将发生的","War with Britain seemed imminent.","和英国的战争似乎一触即发。"],
+["scrappy","/ˈskræpi/","好斗的，不服输的","The scrappy young immigrant never gave up.","这个不服输的年轻移民从不放弃。","和 hungry 一起是主角的标签。"],
+["hungry","/ˈhʌŋɡri/","饥饿的；渴望成功的","She is hungry for success.","她渴望成功。"],
+["astonish","/əˈstɑːnɪʃ/","使震惊","His speech astonished the crowd.","他的演讲让人群震惊。"],
+["unimpeachable","/ˌʌnɪmˈpiːtʃəbəl/","无可指摘的","Washington's honesty was unimpeachable.","华盛顿的诚信无可指摘。"],
+["brandish","/ˈbrændɪʃ/","挥舞（武器）","The soldier brandished his sword.","士兵挥舞着他的剑。"],
+["famished","/ˈfæmɪʃt/","饿极了的","After the march, the troops were famished.","行军之后，士兵们饿坏了。"],
+["relentless","/rɪˈlentləs/","不懈的，无情的","Hamilton was relentless when he wanted something.","汉密尔顿想要什么就会穷追不舍。"],
+["ascendancy","/əˈsendənsi/","优势地位，支配地位","The colonies challenged Britain's ascendancy.","殖民地挑战了英国的支配地位。"],
+["unrest","/ʌnˈrest/","动荡，骚乱","There was growing unrest in the colonies.","殖民地的动荡日益加剧。"],
+["anarchy","/ˈænərki/","无政府状态，混乱","Some feared the revolution would lead to anarchy.","有人担心革命会导致无政府混乱。"],
+["knucklehead","/ˈnʌkəlhed/","笨蛋（口语）","Don't be a knucklehead, think before you fight.","别犯傻，打之前先想想。"],
+["battalion","/bəˈtæljən/","营（军队单位）","Laurens dreamed of leading a battalion of freed slaves.","劳伦斯梦想带领一个由获释奴隶组成的营。"],
+["fraught","/frɔːt/","充满（危险、焦虑）的","The plan was fraught with danger.","这个计划充满危险。"],
+["manumission","/ˌmænjəˈmɪʃən/","解放奴隶","Laurens argued for the manumission of slaves.","劳伦斯主张解放奴隶。"],
+["abolitionist","/ˌæbəˈlɪʃənɪst/","废奴主义者","John Laurens was a passionate abolitionist.","约翰·劳伦斯是一位热忱的废奴主义者。"],
+["tailor","/ˈteɪlər/","裁缝","Mulligan worked as a tailor and spied on British officers.","马利根是个裁缝，暗中刺探英国军官。"],
+["flask","/flæsk/","（随身）小酒壶","He raised his flask and made a toast.","他举起酒壶敬了一杯。"],
+["vengeance","/ˈvendʒəns/","复仇","They wanted vengeance for years of unfair taxes.","他们要为多年的不公税收复仇。"],
+["toast","/toʊst/","祝酒","Let's make a toast to our friends.","让我们为朋友们干杯。"],
+["tavern","/ˈtævərn/","小酒馆","The friends planned the revolution in a tavern.","朋友们在小酒馆里策划革命。"]
+]},
+{ id:"a3", zh:"姐妹与论战", en:"The Schuyler Sisters · Farmer Refuted · You'll Be Back", when:"第一幕", band:"mid", range:null, words:[
+["defendant","/dɪˈfendənt/","被告","The lawyer stood next to the defendant.","律师站在被告身边。"],
+["casualty","/ˈkæʒuəlti/","伤亡人员","The battle caused many casualties.","这场战斗造成了大量伤亡。"],
+["slum","/slʌm/","贫民窟","The sisters left their rich home to walk through the city, even past the slums.","姐妹们离开豪宅逛城里，连贫民窟一带也走过。"],
+["urchin","/ˈɜːrtʃɪn/","（衣衫褴褛的）顽童","A street urchin ran after the carriage.","一个街头顽童追着马车跑。"],
+["intense","/ɪnˈtens/","强烈的；（人）热切的","Angelica found Hamilton intense and exciting.","安吉莉卡觉得汉密尔顿热烈又迷人。"],
+["compel","/kəmˈpel/","迫使","Nothing could compel him to stay silent.","没有什么能逼他闭嘴。"],
+["proceeding","/proʊˈsiːdɪŋ/","（会议、诉讼）程序","He interrupted the proceedings to argue.","他打断了会议程序来辩论。"],
+["rabble","/ˈræbəl/","乌合之众，暴民","The loyalist called the rebels a rabble.","效忠派称起义者是一群暴民。"],
+["heed","/hiːd/","注意，听从","Do not heed the rebels, said Seabury.","西伯里说：别听那些叛乱者的。"],
+["unravel","/ʌnˈrævəl/","解开；瓦解","Hamilton unraveled his opponent's argument point by point.","汉密尔顿逐条拆解对手的论点。"],
+["eloquent","/ˈeləkwənt/","雄辩的，口才好的","He was the most eloquent speaker in the room.","他是在场最能言善辩的人。"],
+["astray","/əˈstreɪ/","迷路，走入歧途","The pamphlet tried to lead the people astray.","那本小册子想把人民引入歧途。"],
+["modulate","/ˈmɑːdʒəleɪt/","调节（音量、语气）","Learn to modulate your voice when you argue.","辩论时要学会控制音量。"],
+["divisive","/dɪˈvaɪsɪv/","制造分裂的","Taxes became a divisive issue.","税收成了一个引发分裂的问题。"],
+["indecisive","/ˌɪndɪˈsaɪsɪv/","优柔寡断的","Hamilton could never be indecisive.","汉密尔顿从不会优柔寡断。"],
+["nicety","/ˈnaɪsəti/","细节；客套","He skipped the niceties and went straight to the point.","他省掉客套，直奔主题。"],
+["hurl","/hɜːrl/","猛掷；大声说出","The two men hurled insults at each other.","两人互相大声辱骂。"],
+["estrangement","/ɪˈstreɪndʒmənt/","疏远，失和","The King sang about the estrangement between Britain and the colonies.","国王唱出了英国和殖民地之间的疏远。"],
+["submissive","/səbˈmɪsɪv/","顺从的","The King wanted the colonies to be submissive.","国王希望殖民地乖乖顺从。"],
+["venerate","/ˈvenəreɪt/","崇敬","Many Americans venerate the Founding Fathers.","许多美国人崇敬开国元勋。"],
+["embellish","/ɪmˈbelɪʃ/","润色，添油加醋","He embellished the story to make it more dramatic.","他给故事添油加醋，让它更戏剧化。"],
+["fleeting","/ˈfliːtɪŋ/","短暂的，转瞬即逝的","It was a fleeting moment of peace.","那是转瞬即逝的和平时刻。"],
+["loyalist","/ˈlɔɪəlɪst/","效忠派（支持英王）","Samuel Seabury was a loyalist who defended the King.","塞缪尔·西伯里是支持英王的效忠派。"],
+["refute","/rɪˈfjuːt/","驳斥","Hamilton refuted every point Seabury made.","汉密尔顿驳斥了西伯里的每一个观点。","歌名《Farmer Refuted》就是「驳农夫」。"],
+["madness","/ˈmædnəs/","疯狂","History says King George later suffered from madness.","历史记载乔治国王后来患了精神疾病。"]
+]},
+{ id:"a4", zh:"战争 · 右手", en:"Right Hand Man", when:"第一幕 · 独立战争", band:"mid", range:null, words:[
+["batter","/ˈbætər/","连续猛击","The British navy battered the city.","英国海军猛烈轰击这座城市。"],
+["stamina","/ˈstæmənə/","耐力，毅力","The army needed stamina to survive the winter.","军队需要毅力熬过冬天。"],
+["divvy","/ˈdɪvi/","分配（口语，divvy up）","Let's divvy up the supplies.","我们把补给分一下。"],
+["scrutiny","/ˈskruːtəni/","仔细审查","Every decision Washington made was under scrutiny.","华盛顿的每个决定都受到审视。"],
+["mutiny","/ˈmjuːtəni/","兵变，哗变","Hungry soldiers threatened mutiny.","饿肚子的士兵扬言要哗变。"],
+["dire","/ˈdaɪər/","极其严重的","The army was in dire need of help.","军队急需援助。"],
+["flee","/fliː/","逃离","Washington's army had to flee New York.","华盛顿的军队不得不撤离纽约。"],
+["contrary","/ˈkɑːntreri/","相反的","Contrary to his wishes, he was given a desk job.","与他的意愿相反，他被安排做文书。"],
+["precede","/prɪˈsiːd/","在……之前","His reputation preceded him.","他人未到，名声先到。"],
+["renown","/rɪˈnaʊn/","名望","Hamilton wanted glory and renown.","汉密尔顿渴望荣耀与名望。"],
+["martyr","/ˈmɑːrtər/","殉道者","Washington needed him alive, not as a martyr.","华盛顿需要他活着，而不是去当烈士。"],
+["phenomenon","/fəˈnɑːmənɑːn/","奇人；现象","The young writer was a phenomenon.","这位年轻作者是个奇人。"],
+["arrogant","/ˈærəɡənt/","傲慢的","Some officers thought Hamilton was arrogant.","有些军官觉得汉密尔顿很傲慢。"],
+["loudmouth","/ˈlaʊdmaʊθ/","大嘴巴，爱吹嘘的人","Charles Lee called him a loudmouth.","查尔斯·李说他是个大嘴巴。"],
+["quill","/kwɪl/","羽毛笔","He could do more with a quill than a gun.","他用羽毛笔比用枪更有作为。"],
+["undeniable","/ˌʌndɪˈnaɪəbəl/","不可否认的","His talent was undeniable.","他的才华不容否认。"],
+["reliable","/rɪˈlaɪəbəl/","可靠的","Washington needed someone reliable by his side.","华盛顿需要一个可靠的人在身边。"],
+["right-hand man","/ˌraɪt hænd ˈmæn/","得力助手","Hamilton became Washington's right-hand man.","汉密尔顿成了华盛顿的得力助手。"],
+["aide-de-camp","/ˌeɪd də ˈkæmp/","副官，侍从参谋","As aide-de-camp, he wrote Washington's letters.","作为副官，他替华盛顿写信。","法语借词，de 读得很轻。"],
+["general","/ˈdʒenərəl/","将军","The general asked him to join his staff.","将军请他加入参谋团队。"]
+]},
+{ id:"a5", zh:"舞会 · 爱情", en:"A Winter's Ball · Helpless · Satisfied", when:"第一幕 · 1780", band:"mid", range:null, words:[
+["deflower","/diːˈflaʊər/","使失去贞操（旧用法）","The rumors at the ball were full of gossip about deflowering.","舞会上的传言满是风流韵事。","剧中用来调侃汉密尔顿的风流名声。"],
+["proximity","/prɑːkˈsɪməti/","接近，邻近","Being in close proximity to the general opened doors.","能接近将军，让他机会大增。"],
+["feral","/ˈfɪrəl/","野性的","He was called a feral young man.","他被说成是个野小子。"],
+["tomcat","/ˈtɑːmkæt/","公猫；好色之徒","Everyone at the ball called him a tomcat.","舞会上人人都说他是个花花公子。"],
+["revel","/ˈrevəl/","狂欢；陶醉于","The officers reveled at the winter ball.","军官们在冬季舞会上狂欢。"],
+["dollop","/ˈdɑːləp/","一团，一勺","Add a dollop of cream to your coffee.","在咖啡里加一勺奶油。"],
+["dreamlike","/ˈdriːmlaɪk/","梦幻般的","The night felt dreamlike.","那晚如梦似幻。"],
+["pang","/pæŋ/","一阵剧痛（心痛）","She felt a pang of jealousy.","她心里一阵嫉妒。"],
+["aflame","/əˈfleɪm/","燃烧的，炽热的","His eyes were aflame with ambition.","他眼中燃烧着野心。"],
+["helpless","/ˈhelpləs/","无助的；（爱得）无法自拔","Eliza felt helpless the moment she saw him.","伊丽莎一见到他就无法自拔。","第一幕情歌《Helpless》。"],
+["wit","/wɪt/","机智，风趣","Angelica loved his quick wit.","安吉莉卡喜欢他的机敏。"],
+["witty","/ˈwɪti/","风趣的","Their conversation was witty and fast.","他们的对话机智又快节奏。"],
+["fidget","/ˈfɪdʒɪt/","坐立不安，乱动","She fidgeted while waiting for him.","等他的时候她坐立不安。"],
+["askance","/əˈskæns/","斜眼看，怀疑地","Her father looked askance at the poor soldier.","她父亲怀疑地打量这个穷军官。"],
+["fundamental","/ˌfʌndəˈmentəl/","根本的","There was a fundamental problem: she was a woman in that era.","根本问题是：在那个时代她是女性。"],
+["status","/ˈsteɪtəs/","地位","He married into a family of high status.","他娶进了一个地位很高的家族。"],
+["elevate","/ˈeləveɪt/","提升","Marrying a Schuyler would elevate his position.","娶舒勒家的女儿能提升他的地位。"],
+["naive","/naɪˈiːv/","天真的","Angelica knew her sister was a bit naive.","安吉莉卡知道妹妹有点天真。"],
+["resign","/rɪˈzaɪn/","辞职；（resign oneself）只好接受","She resigned herself to losing him.","她只好接受失去他。"],
+["sensible","/ˈsensəbəl/","明智的，理智的","It was the sensible choice, but it broke her heart.","那是明智的选择，却让她心碎。"],
+["satisfied","/ˈsætɪsfaɪd/","满足的","Angelica would never be satisfied.","安吉莉卡永远不会满足。","《Satisfied》以倒带手法重演婚礼一幕。"],
+["harem","/ˈhɛrəm/","后宫，妻妾群","He joked about the sisters like a harem.","他拿姐妹们开玩笑，像在说后宫。"]
+]},
+{ id:"a6", zh:"等待 · 决斗守则", en:"Wait for It · Stay Alive · Ten Duel Commandments", when:"第一幕", band:"mid", range:null, words:[
+["brimstone","/ˈbrɪmstoʊn/","硫磺（地狱之火）","The preacher spoke of fire and brimstone.","牧师讲着地狱烈火。","fire and brimstone = 地狱之火、末日审判式的说教。"],
+["hymn","/hɪm/","赞美诗","Burr's grandfather wrote sermons and hymns.","伯尔的祖父写布道文和赞美诗。","n 不发音，和 him 同音。"],
+["inimitable","/ɪˈnɪmɪtəbəl/","无法模仿的","Hamilton had an inimitable style.","汉密尔顿有无可模仿的风格。"],
+["restraint","/rɪˈstreɪnt/","克制","Burr showed great restraint and waited.","伯尔非常克制，一直等待时机。"],
+["despondent","/dɪˈspɑːndənt/","沮丧的，失望的","After the defeat, the soldiers were despondent.","战败后士兵们很沮丧。"],
+["sixpence","/ˈsɪkspəns/","六便士（旧英国硬币）","He didn't have a sixpence to his name.","他身无分文。"],
+["cavalry","/ˈkævəlri/","骑兵","The cavalry charged across the field.","骑兵冲过战场。","别和 Calvary（耶稣受难地）混淆。"],
+["resort","/rɪˈzɔːrt/","手段；（last resort）最后手段","A duel should be a last resort.","决斗应该是最后手段。"],
+["correspondence","/ˌkɔːrəˈspɑːndəns/","通信，信件","Her correspondence with Hamilton lasted for years.","她和汉密尔顿通信多年。"],
+["outrage","/ˈaʊtreɪdʒ/","愤怒；暴行","Lee's insult caused outrage.","李的侮辱激起众怒。"],
+["provoke","/prəˈvoʊk/","挑衅，激怒","Don't let him provoke you into a duel.","别让他激你去决斗。"],
+["outright","/ˌaʊtˈraɪt/","彻底地，公开地","He refused outright.","他断然拒绝。"],
+["justify","/ˈdʒʌstɪfaɪ/","证明……正当","Can you justify your actions?","你能为你的行为辩解吗？"],
+["camaraderie","/ˌkɑːməˈrɑːdəri/","同志情谊","The camaraderie between the friends was strong.","朋友们之间的情谊很深。","法语借词，五个音节。"],
+["contraband","/ˈkɑːntrəbænd/","走私货","They seized British contraband.","他们缴获了英国人的违禁物资。"],
+["entrust","/ɪnˈtrʌst/","委托","He entrusted his friend with the message.","他把口信托付给朋友。"],
+["disobey","/ˌdɪsəˈbeɪ/","不服从","Laurens disobeyed Washington's order and fought the duel.","劳伦斯违抗华盛顿的命令去决斗。"],
+["commandment","/kəˈmændmənt/","戒律","The song lists the ten commandments of dueling.","这首歌列出了决斗十诫。","结构致敬 Biggie 的《Ten Crack Commandments》。"],
+["duel","/ˈduːəl/","决斗","In 1804, Burr and Hamilton fought a duel.","1804 年伯尔和汉密尔顿进行了决斗。","和 dual（双重的）同音。"],
+["second","/ˈsekənd/","（决斗中的）副手","Each man chose a second to negotiate.","双方各找一名副手去谈判。"],
+["lieutenant","/luːˈtenənt/","中尉，副官","Laurens was a lieutenant colonel.","劳伦斯是中校。","英式读 /lefˈtenənt/。"],
+["reckon","/ˈrekən/","认为；估算","I reckon this will end badly.","我看这事要糟。"],
+["negotiate","/nɪˈɡoʊʃieɪt/","谈判","The seconds tried to negotiate a peace.","副手们试图谈和。"],
+["commonplace","/ˈkɑːmənpleɪs/","平常的事","Duels were commonplace back then.","那时决斗是常事。"],
+["dispute","/dɪˈspjuːt/","争端","They settled the dispute with pistols.","他们用手枪解决争端。"],
+["civility","/səˈvɪləti/","礼貌","Even in a duel, they kept their civility.","即使决斗，他们也保持礼数。"],
+["kin","/kɪn/","亲属","Tell my kin I died with honor.","告诉我的家人，我死得光荣。"],
+["adrenaline","/əˈdrenəlɪn/","肾上腺素","Adrenaline rushed through his body.","肾上腺素在他体内奔涌。"],
+["absurd","/əbˈsɜːrd/","荒谬的","The whole quarrel was absurd.","整场争吵都很荒谬。"],
+["ruinous","/ˈruːɪnəs/","毁灭性的","The war was ruinous for the economy.","这场战争对经济是毁灭性的。"],
+["yield","/jiːld/","让步，屈服","Charles Lee finally yielded.","查尔斯·李最终认输了。"],
+["bluff","/blʌf/","虚张声势","Was he serious, or was it a bluff?","他是认真的还是虚张声势？"],
+["aggravate","/ˈæɡrəveɪt/","加重；激怒","His words only aggravated the situation.","他的话只让局面更糟。"],
+["relish","/ˈrelɪʃ/","享受，乐于","Hamilton relished a good argument.","汉密尔顿很享受一场好辩论。"]
+]},
+{ id:"a7", zh:"约克镇 · 胜利 · 建国", en:"Guns and Ships · Yorktown · Non-Stop", when:"第一幕 · 1781–1787", band:"mid", range:null, words:[
+["legacy","/ˈleɡəsi/","遗产，传世之物","What legacy will you leave behind?","你会留下怎样的遗产？","全剧最核心的主题词之一。"],
+["narrative","/ˈnærətɪv/","叙事，说法","Eliza spent fifty years shaping the narrative of his life.","伊丽莎用五十年塑造了他人生的叙事。","另一个核心主题词。"],
+["ragtag","/ˈræɡtæɡ/","杂牌的，乌合的","A ragtag army defeated a great empire.","一支杂牌军打败了一个大帝国。"],
+["victorious","/vɪkˈtɔːriəs/","胜利的","The Americans were victorious at Yorktown.","美国人在约克镇取胜。"],
+["quagmire","/ˈkwæɡmaɪər/","困境，泥潭","The war had become a quagmire for Britain.","这场战争已成为英国的泥潭。"],
+["henchman","/ˈhentʃmən/","亲信，走狗","The general's henchmen followed him everywhere.","将军的亲信跟着他到处走。"],
+["confound","/kənˈfaʊnd/","使困惑","Lafayette's tactics confounded the British.","拉法耶特的战术让英军摸不着头脑。"],
+["rendezvous","/ˈrɑːndeɪvuː/","约会地点；会合","The troops planned a rendezvous in Virginia.","部队计划在弗吉尼亚会合。","法语借词，结尾 s 不发音。"],
+["consolidate","/kənˈsɑːlɪdeɪt/","巩固，合并","The army consolidated its forces.","军队集中了兵力。"],
+["resilience","/rɪˈzɪliəns/","韧性","The soldiers showed great resilience.","士兵们展现出极强的韧性。"],
+["tactical","/ˈtæktɪkəl/","战术的","It was a tactical victory.","这是一场战术上的胜利。"],
+["massacre","/ˈmæsəkər/","大屠杀","Washington remembered the massacre of his men long ago.","华盛顿想起多年前部下被屠杀的往事。"],
+["firsthand","/ˌfɜːrstˈhænd/","第一手的，亲身的","He saw the horrors of war firsthand.","他亲眼目睹了战争的恐怖。"],
+["command","/kəˈmænd/","指挥权","Finally, Hamilton got his own command.","汉密尔顿终于有了自己的指挥权。"],
+["seize","/siːz/","抓住，夺取","Seize the moment!","抓住这一刻！"],
+["covenant","/ˈkʌvənənt/","盟约","They made a covenant to fight together.","他们立下盟约并肩作战。"],
+["ruffian","/ˈrʌfiən/","恶棍，流氓","A gang of ruffians attacked the carriage.","一伙流氓袭击了马车。"],
+["parapet","/ˈpærəpet/","（城墙）胸墙，护墙","The soldiers climbed over the parapet.","士兵们翻过胸墙。"],
+["frantic","/ˈfræntɪk/","发狂的，慌乱的","There was frantic activity in the camp.","营地里一片忙乱。"],
+["stagger","/ˈstæɡər/","蹒跚；使震惊","The news staggered the King.","这个消息让国王大为震惊。"],
+["query","/ˈkwɪri/","询问，疑问","The King had a query for the new nation.","国王对这个新国家有个疑问。"],
+["deliberation","/dɪˌlɪbəˈreɪʃən/","慎重考虑；商议","After long deliberation, they agreed.","经过长时间商议，他们同意了。"],
+["corruption","/kəˈrʌpʃən/","腐败","He fought against corruption in government.","他反对政府腐败。"],
+["harmony","/ˈhɑːrməni/","和声；和谐","The ensemble sings in perfect harmony.","合唱团和声完美。"],
+["stall","/stɔːl/","拖延","Stop stalling and make a decision.","别拖了，做个决定。"],
+["injustice","/ɪnˈdʒʌstɪs/","不公正","He spoke out against injustice.","他公开反对不公。"],
+["mediocrity","/ˌmiːdiˈɑːkrəti/","平庸","Hamilton hated mediocrity.","汉密尔顿痛恨平庸。"],
+["indelicate","/ɪnˈdelɪkət/","不得体的","It was an indelicate question.","这是个不得体的问题。"],
+["listless","/ˈlɪstləs/","无精打采的","After the war, Burr felt listless.","战后伯尔感到无所适从。"],
+["proclamation","/ˌprɑːkləˈmeɪʃən/","宣言，公告","The King issued a proclamation.","国王发布了一份公告。"],
+["succinct","/səkˈsɪŋkt/","简明扼要的","Burr told him to be more succinct.","伯尔劝他说话简短些。"],
+["persuasive","/pərˈsweɪsɪv/","有说服力的","His essays were extremely persuasive.","他的文章极具说服力。"],
+["amendment","/əˈmendmənt/","（宪法）修正案","The Bill of Rights is the first ten amendments.","《权利法案》就是前十条修正案。"],
+["notion","/ˈnoʊʃən/","观念，想法","The notion of a strong federal government scared many.","强大联邦政府的想法令许多人害怕。"],
+["tension","/ˈtenʃən/","紧张关系","There was tension between Burr and Hamilton.","伯尔和汉密尔顿之间关系紧张。"],
+["accompany","/əˈkʌmpəni/","陪伴；伴奏","The piano accompanies the singer.","钢琴为歌手伴奏。"],
+["in loco parentis","/ɪn ˌloʊkoʊ pəˈrentɪs/","代行父母职责（拉丁语）","The teacher acted in loco parentis on the trip.","旅行中老师代行父母之责。","拉丁语短语。"],
+["the world turned upside down","/ðə ˈwɜːrld tɜːrnd ˌʌpsaɪd ˈdaʊn/","天翻地覆","At Yorktown, it felt like the world turned upside down.","在约克镇，仿佛天翻地覆。","传说英军投降时演奏的曲名。"],
+["non-stop","/ˌnɑːn ˈstɑːp/","不停的","He wrote non-stop, day and night.","他日夜不停地写。","第一幕终曲《Non-Stop》。"],
+["essay","/ˈeseɪ/","文章，论说文","He wrote fifty-one of the eighty-five essays.","八十五篇文章里他写了五十一篇。"]
+]},
+{ id:"b1", zh:"杰斐逊归来 · 内阁辩论", en:"What'd I Miss · Cabinet Battle #1 · Take a Break", when:"第二幕 · 1789", band:"trop", range:null, words:[
+["forfeit","/ˈfɔːrfɪt/","丧失，放弃","If you don't show up, you forfeit the debate.","你不出场就算弃权。"],
+["precedent","/ˈpresɪdənt/","先例","Washington set a precedent for future presidents.","华盛顿为后来的总统树立了先例。"],
+["two-party","/ˌtuː ˈpɑːrti/","两党的","The fight helped create the two-party system.","这场争斗促成了两党制。"],
+["ambassador","/æmˈbæsədər/","大使","Jefferson had been ambassador to France.","杰斐逊曾任驻法大使。"],
+["status quo","/ˌsteɪtəs ˈkwoʊ/","现状（拉丁语）","Jefferson wanted to keep the status quo.","杰斐逊想维持现状。"],
+["declaration","/ˌdekləˈreɪʃən/","宣言","Jefferson wrote the Declaration of Independence.","杰斐逊起草了《独立宣言》。"],
+["cabinet","/ˈkæbɪnət/","内阁","Cabinet meetings became rap battles.","内阁会议变成了说唱对决。"],
+["abyss","/əˈbɪs/","深渊","The nation was on the edge of an abyss.","国家站在深渊边缘。"],
+["assume","/əˈsuːm/","承担（债务）；假定","Hamilton wanted the federal government to assume state debts.","汉密尔顿想让联邦政府承担各州债务。","assumption plan = 债务承担计划。"],
+["establish","/ɪˈstæblɪʃ/","建立","He wanted to establish a national bank.","他想建立国家银行。"],
+["pursuit","/pərˈsuːt/","追求","Life, liberty, and the pursuit of happiness.","生命、自由和追求幸福的权利。","《独立宣言》名句。"],
+["enterprising","/ˈentərpraɪzɪŋ/","有进取心的","New York was full of enterprising merchants.","纽约满是有进取心的商人。"],
+["candidacy","/ˈkændɪdəsi/","候选资格","He announced his candidacy.","他宣布参选。"],
+["frisky","/ˈfrɪski/","活泼好动的","The puppy was feeling frisky.","小狗很欢腾。"],
+["mellow","/ˈmeloʊ/","柔和的；放松","Calm down and mellow out.","冷静点，放松些。"],
+["diuretic","/ˌdaɪjəˈretɪk/","利尿剂","Coffee works as a mild diuretic.","咖啡有轻微利尿作用。"],
+["sedative","/ˈsedətɪv/","镇静剂","The doctor gave him a sedative.","医生给他用了镇静剂。"],
+["civics","/ˈsɪvɪks/","公民学","This musical is a civics lesson set to music.","这部音乐剧是配上音乐的公民课。"],
+["slave","/sleɪv/","奴隶","Hamilton attacked Jefferson for owning slaves.","汉密尔顿抨击杰斐逊蓄奴。"],
+["trench","/trentʃ/","战壕","While Jefferson was in Paris, others fought in the trenches.","杰斐逊在巴黎时，别人在战壕里拼命。"],
+["hesitant","/ˈhezɪtənt/","犹豫的","Congress was hesitant to pass the plan.","国会对通过该计划犹豫不决。"],
+["reticent","/ˈretɪsənt/","沉默寡言的","Madison was more reticent than Jefferson.","麦迪逊比杰斐逊话少。"],
+["hatter","/ˈhætər/","帽匠","He was as mad as a hatter.","他疯得像个帽匠。","as mad as a hatter：疯疯癫癫。"],
+["reconvene","/ˌriːkənˈviːn/","重新召开","The meeting will reconvene tomorrow.","会议明天继续。"],
+["recess","/rɪˈses/","休会","Congress is in recess for the summer.","国会夏季休会。"],
+["blunder","/ˈblʌndər/","大错","It was a political blunder.","这是一次政治失误。"],
+["hostage","/ˈhɑːstɪdʒ/","人质","They held the plan hostage for votes.","他们拿这项计划当筹码换选票。"],
+["stroke","/stroʊk/","一击；（a stroke of）一下","It was a stroke of genius.","这是神来之笔。"],
+["nonstarter","/ˌnɑːnˈstɑːrtər/","注定失败的事","Without Southern votes, the plan is a nonstarter.","没有南方的票，这计划根本行不通。"],
+["intransigent","/ɪnˈtrænzɪdʒənt/","不妥协的","Both sides were intransigent.","双方都寸步不让。"],
+["creep","/kriːp/","怪人，讨厌鬼","Angelica called the rumor-spreader a creep.","安吉莉卡说造谣的人是个讨厌鬼。"],
+["petty","/ˈpeti/","小气的，琐碎的","Their argument became petty.","他们的争吵变得很小家子气。"],
+["Macbeth","/məkˈbeθ/","《麦克白》","Angelica and Hamilton quote Macbeth in their letters.","安吉莉卡和汉密尔顿在信里引用《麦克白》。","","n"],
+["polymath","/ˈpɑːlimæθ/","博学家","Jefferson was a polymath.","杰斐逊是个博学家。"],
+["folly","/ˈfɑːli/","愚蠢（行为）","It would be folly to ignore her advice.","不听她的劝告是愚蠢的。"],
+["subside","/səbˈsaɪd/","平息，减退","Wait for the anger to subside.","等怒气消下去。"],
+["the South","/ðə ˈsaʊθ/","（美国）南方","The South didn't want to pay the North's debts.","南方不想替北方还债。"]
+]},
+{ id:"b2", zh:"诱惑 · 密室", en:"Say No to This · The Room Where It Happens", when:"第二幕 · 1790–1791", band:"trop", range:null, words:[
+["supper","/ˈsʌpər/","晚餐（较旧说法）","Jefferson invited them to a private supper.","杰斐逊请他们共进私人晚宴。"],
+["consume","/kənˈsuːm/","吞噬；消耗","Work consumed him all summer.","整个夏天他都被工作吞没。"],
+["cheating","/ˈtʃiːtɪŋ/","出轨；作弊","He knew cheating on Eliza was wrong.","他知道背叛伊丽莎是错的。"],
+["pastime","/ˈpæstaɪm/","消遣","Gossip was New York's favorite pastime.","八卦是纽约人最爱的消遣。"],
+["endeavor","/ɪnˈdevər/","努力，尝试","Every endeavor needs a plan.","每项尝试都需要计划。"],
+["prosperous","/ˈprɑːspərəs/","繁荣的","He dreamed of a prosperous nation.","他梦想一个繁荣的国家。"],
+["pay the piper","/ˌpeɪ ðə ˈpaɪpər/","自食其果，付出代价","Sooner or later, you have to pay the piper.","迟早都要付出代价。","piper 吹笛人。"],
+["pathetic","/pəˈθetɪk/","可怜的，可悲的","It was a pathetic excuse.","那是个可悲的借口。"],
+["merciless","/ˈmɜːrsɪləs/","无情的","His critics were merciless.","批评他的人毫不留情。"],
+["diametrically","/ˌdaɪəˈmetrɪkli/","完全（相反地）","Their views were diametrically opposed.","他们的观点截然相反。"],
+["foe","/foʊ/","敌人","Old friends became political foes.","老朋友成了政敌。"],
+["emerge","/ɪˈmɜːrdʒ/","出现，浮现","Three men emerged from the dinner with a deal.","三人从晚宴出来，已达成交易。"],
+["unprecedented","/ʌnˈpresɪdentɪd/","前所未有的","It was an unprecedented compromise.","这是一次前所未有的妥协。"],
+["distress","/dɪˈstres/","痛苦，困境","The nation's finances were in distress.","国家财政陷入困境。"],
+["disarray","/ˌdɪsəˈreɪ/","混乱","The government was in disarray.","政府一片混乱。"],
+["fray","/freɪ/","争斗，竞争","Burr wanted to join the fray.","伯尔想加入战局。"],
+["venue","/ˈvenjuː/","场所","The venue of the deal was kept secret.","交易地点是保密的。"],
+["grappling","/ˈɡræplɪŋ/","努力解决；扭打","They were grappling with a hard question.","他们在努力解决一个难题。"],
+["committee","/kəˈmɪti/","委员会","The decision wasn't made by a committee.","这个决定不是委员会做出的。"],
+["insight","/ˈɪnsaɪt/","洞察力","Burr had no insight into the secret deal.","伯尔对密室交易一无所知。"],
+["quid pro quo","/ˌkwɪd proʊ ˈkwoʊ/","交换条件（拉丁语）","The deal was a quid pro quo.","这是一笔交换。","剧中：南方支持债务计划，换首都迁到波托马克河畔。"],
+["Potomac","/pəˈtoʊmək/","波托马克河","The new capital would be built on the Potomac.","新首都将建在波托马克河畔。","","n"],
+["outlive","/ˌaʊtˈlɪv/","比……活得长","Ideas can outlive the people who create them.","思想能比创造它的人活得更久。"],
+["upstart","/ˈʌpstɑːrt/","暴发户，新贵","The old families saw him as an upstart.","老家族把他当暴发户。"],
+["senate","/ˈsenət/","参议院","Burr won a seat in the Senate.","伯尔赢得了参议院席位。"],
+["senator","/ˈsenətər/","参议员","Burr defeated Philip Schuyler to become senator.","伯尔击败菲利普·舒勒当上参议员。"],
+["compromise","/ˈkɑːmprəmaɪz/","妥协","The Compromise of 1790 moved the capital south.","1790 年妥协案把首都南移。"],
+["the room where it happens","/ðə ˈruːm wer ɪt ˈhæpənz/","（权力交易的）密室","Burr wanted to be in the room where it happens.","伯尔渴望进入那间做决定的屋子。","剧中名曲，比喻权力核心。"],
+["blackmail","/ˈblækmeɪl/","勒索","Mr. Reynolds used the affair to blackmail him.","雷诺兹先生用这段私情勒索他。"]
+]},
+{ id:"b3", zh:"第二次辩论 · 告别", en:"Cabinet Battle #2 · One Last Time", when:"第二幕 · 1793–1796", band:"trop", range:null, words:[
+["crooked","/ˈkrʊkɪd/","不诚实的；弯曲的","They accused him of being a crooked politician.","他们指控他是个不老实的政客。"],
+["verge","/vɜːrdʒ/","边缘","France was on the verge of war.","法国处在战争边缘。"],
+["treaty","/ˈtriːti/","条约","America signed a treaty with France during the revolution.","美国在革命期间和法国签了条约。"],
+["oppressor","/əˈpresər/","压迫者","The French people rose against their oppressors.","法国人民起来反抗压迫者。"],
+["tyranny","/ˈtɪrəni/","暴政","They fought against tyranny.","他们反抗暴政。"],
+["station","/ˈsteɪʃən/","身份地位；岗位","He forgot his station.","他忘了自己的身份。"],
+["betray","/bɪˈtreɪ/","背叛","Jefferson felt Washington had betrayed France.","杰斐逊觉得华盛顿背叛了法国。"],
+["meddling","/ˈmedlɪŋ/","干涉","Stop meddling in other countries' affairs.","别干涉别国事务。"],
+["riot","/ˈraɪət/","暴乱","News of the revolution sparked riots.","革命的消息引发了骚乱。"],
+["disquiet","/dɪsˈkwaɪət/","不安","The news caused disquiet in Philadelphia.","这个消息让费城人心不安。"],
+["neutrality","/nuːˈtræləti/","中立","Washington chose neutrality.","华盛顿选择中立。"],
+["accumulate","/əˈkjuːmjəleɪt/","积累","He accumulated enemies faster than friends.","他树敌比交友还快。"],
+["quick-witted","/ˌkwɪk ˈwɪtɪd/","机敏的","She was quick-witted and charming.","她聪明伶俐又迷人。"],
+["alas","/əˈlæs/","唉（古雅感叹）","Alas, his time was running out.","唉，他的时间不多了。"],
+["acquitted","/əˈkwɪtɪd/","被宣判无罪的","The man was acquitted of all charges.","此人所有罪名均被判无罪。"],
+["fracture","/ˈfræktʃər/","破裂，分裂","The party began to fracture.","党派开始分裂。"],
+["faction","/ˈfækʃən/","派系","Washington warned against political factions.","华盛顿告诫国人警惕党派之争。"],
+["fraction","/ˈfrækʃən/","一小部分","Only a fraction of people could vote.","只有一小部分人能投票。"],
+["retraction","/rɪˈtrækʃən/","撤回（声明）","He demanded a retraction of the article.","他要求撤回那篇文章。"],
+["primp","/prɪmp/","精心打扮","Adams primped before the ceremony.","亚当斯在典礼前精心打扮。"],
+["preen","/priːn/","（鸟）梳理羽毛；自鸣得意","He preened like a peacock.","他像孔雀一样得意。"],
+["vacuous","/ˈvækjuəs/","空洞的，无知的","It was a vacuous speech.","那是一篇空洞的演讲。"],
+["unmask","/ʌnˈmæsk/","揭露","Hamilton wanted to unmask his enemies.","汉密尔顿想揭露他的敌人。"],
+["enterprise","/ˈentərpraɪz/","事业，企业","Building a nation is a great enterprise.","建国是一项伟大的事业。"],
+["abet","/əˈbet/","教唆，帮助（做坏事）","He was accused of aiding and abetting a crime.","他被指控协助教唆犯罪。"],
+["douse","/daʊs/","浇灭，泼水","Douse the fire before you leave.","走之前把火浇灭。"],
+["farewell address","/ˌferˈwel əˈdres/","告别演说","Washington's Farewell Address was written with Hamilton's help.","华盛顿的告别演说是汉密尔顿帮忙写的。"],
+["step down","/ˌstep ˈdaʊn/","下台，卸任","Washington chose to step down after two terms.","华盛顿两届任满后选择卸任。"],
+["term","/tɜːrm/","任期","A president can serve two terms.","总统可以连任两届。"],
+["vine and fig tree","/ˈvaɪn ənd ˈfɪɡ triː/","葡萄树与无花果树（安居乐业）","Washington dreamed of sitting under his own vine and fig tree.","华盛顿梦想坐在自家葡萄树和无花果树下。","出自《圣经·弥迦书》，象征和平安居。"]
+]},
+{ id:"b4", zh:"丑闻爆发", en:"We Know · Hurricane · The Reynolds Pamphlet", when:"第二幕 · 1797", band:"trop", range:null, words:[
+["dissident","/ˈdɪsɪdənt/","异见者","Dissidents were not welcome in the party.","党内不欢迎异见者。"],
+["misdeed","/ˌmɪsˈdiːd/","不端行为","They searched his records for misdeeds.","他们翻查他的账目找不端行为。"],
+["pseudonym","/ˈsuːdənɪm/","笔名，化名","He wrote under a pseudonym.","他用笔名写作。","p 不发音。"],
+["partisan","/ˈpɑːrtɪzən/","党派的，偏袒的","The newspapers were very partisan.","报纸都很有党派立场。"],
+["unconscious","/ʌnˈkɑːnʃəs/","无意识的","He made an unconscious mistake.","他无意中犯了错。"],
+["nevertheless","/ˌnevərðəˈles/","然而，尽管如此","He was guilty of an affair; nevertheless, he had not stolen money.","他确有婚外情，但他没有贪污。"],
+["defect","/dɪˈfekt/","叛变，投敌","Several allies defected to the other side.","好几个盟友倒向了对方。"],
+["indulgence","/ɪnˈdʌldʒəns/","放纵","He asked for the public's indulgence.","他请求公众宽容。"],
+["zeal","/ziːl/","热情，狂热","He defended himself with zeal.","他满腔热情地为自己辩护。"],
+["consign","/kənˈsaɪn/","交付，打发","Her letters were consigned to the fire.","她的信被付之一炬。"],
+["oblivion","/əˈblɪviən/","被遗忘；湮没","His letters were nearly lost to oblivion.","他的信几乎被历史遗忘。"],
+["retreat","/rɪˈtriːt/","撤退","Sometimes a retreat is the smartest move.","有时撤退才是最聪明的一步。"],
+["partake","/pɑːrˈteɪk/","参与；吃喝","Will you partake in the celebration?","你会参加庆祝吗？"],
+["benign","/bɪˈnaɪn/","良性的，温和的","It seemed like a benign mistake.","看起来是个无害的小错。"],
+["loom","/luːm/","（危险）逼近","A scandal loomed over him.","丑闻在他头顶逼近。"],
+["protean","/ˈproʊtiən/","多变的","He had a protean mind.","他的头脑千变万化。"],
+["ardent","/ˈɑːrdənt/","热烈的","She was his most ardent supporter.","她是他最热心的支持者。"],
+["Creole","/ˈkriːoʊl/","克里奥尔人（殖民地出生者）","Enemies mocked him as a Creole from the islands.","政敌嘲笑他是来自海岛的克里奥尔人。"],
+["taunt","/tɔːnt/","嘲弄","They taunted him about his past.","他们拿他的过去嘲弄他。"],
+["virtue","/ˈvɜːrtʃuː/","美德","Honesty was the virtue he valued most.","诚实是他最看重的美德。"],
+["speculation","/ˌspekjuˈleɪʃən/","投机；猜测","They accused him of illegal speculation.","他们指控他非法投机。"],
+["embezzlement","/ɪmˈbezəlmənt/","挪用公款","He was cleared of embezzlement.","他被洗清了挪用公款的嫌疑。"],
+["court","/kɔːrt/","追求（某人）；法庭","He courted Eliza for months.","他追求伊丽莎好几个月。"],
+["escort","/ɪˈskɔːrt/","护送","He escorted her home.","他送她回家。"],
+["extort","/ɪkˈstɔːrt/","敲诈","Reynolds extorted money from him.","雷诺兹敲诈他的钱。"],
+["sordid","/ˈsɔːrdɪd/","肮脏的，卑鄙的","He published every sordid detail.","他把所有不堪的细节都公开了。"],
+["pamphlet","/ˈpæmflət/","小册子","He published a pamphlet confessing the affair.","他出版了一本小册子承认私情。","《The Reynolds Pamphlet》。"],
+["affair","/əˈfer/","私情；事务","The affair destroyed his reputation.","这段婚外情毁了他的名声。"],
+["scandal","/ˈskændəl/","丑闻","It was America's first political sex scandal.","这是美国第一桩政治性丑闻。"]
+]},
+{ id:"b5", zh:"焚信 · 失去 · 原谅", en:"Burn · Blow Us All Away · It's Quiet Uptown", when:"第二幕 · 1797–1801", band:"trop", range:null, words:[
+["burn","/bɜːrn/","烧掉","Eliza burned the letters he had written to her.","伊丽莎烧掉了他写给她的信。","《Burn》是伊丽莎的独唱。"],
+["torrid","/ˈtɔːrɪd/","炽热的；热烈的","It was a torrid affair.","那是一段炽热的私情。"],
+["amorous","/ˈæmərəs/","多情的，色情的","He wrote amorous letters to his wife.","他给妻子写情意绵绵的信。"],
+["defenseless","/dɪˈfensləs/","毫无防备的","She felt defenseless and betrayed.","她感到毫无防备、遭到背叛。"],
+["senseless","/ˈsensləs/","无意义的","It was a senseless act.","那是毫无意义的举动。"],
+["virtuosity","/ˌvɜːrtʃuˈɑːsəti/","精湛技艺","His writing showed great virtuosity.","他的文笔技艺精湛。"],
+["disparage","/dɪˈspærɪdʒ/","贬低","George Eacker disparaged Hamilton in a speech.","乔治·埃克在演讲中贬低汉密尔顿。"],
+["frock","/frɑːk/","（旧式）长外衣，连衣裙","She wore a simple frock.","她穿着一件朴素的连衣裙。"],
+["scoundrel","/ˈskaʊndrəl/","恶棍","Philip called Eacker a scoundrel.","菲利普骂埃克是个恶棍。"],
+["mortally","/ˈmɔːrtəli/","致命地","Philip was mortally wounded in the duel.","菲利普在决斗中受了致命伤。"],
+["prospect","/ˈprɑːspekt/","前景","Philip was a young man with a bright prospect.","菲利普是个前途光明的年轻人。"],
+["treason","/ˈtriːzən/","叛国罪","Burr was later tried for treason.","伯尔后来被控叛国。"],
+["sully","/ˈsʌli/","玷污","Don't sully your family's name.","别玷污你的家族名声。"],
+["indifference","/ɪnˈdɪfərəns/","冷漠","His indifference hurt her more than anger.","他的冷漠比愤怒更伤她。"],
+["deliverance","/dɪˈlɪvərəns/","解救","They prayed for deliverance.","他们祈求解脱。"],
+["cease","/siːs/","停止","The fighting ceased at dawn.","战斗在黎明停止。"],
+["pleasantry","/ˈplezəntri/","客套话","They exchanged pleasantries before the duel.","决斗前双方寒暄了几句。"],
+["commence","/kəˈmens/","开始","Let the duel commence.","决斗开始。"],
+["lodge","/lɑːdʒ/","提出（抗议）；寄宿","He lodged a formal complaint.","他正式提出了申诉。"],
+["grace","/ɡreɪs/","恩典；优雅","Eliza showed great grace when she forgave him.","伊丽莎原谅他时展现了极大的宽厚。","《It's Quiet Uptown》里伊丽莎原谅了他。"],
+["forthcoming","/ˌfɔːrθˈkʌmɪŋ/","即将到来的；坦率的","He was not forthcoming about his past.","他对自己的过去讳莫如深。"],
+["uptown","/ˌʌpˈtaʊn/","上城（曼哈顿北部）","After Philip died, the family moved uptown.","菲利普死后，一家人搬到了上城。"],
+["unimaginable","/ˌʌnɪˈmædʒɪnəbəl/","无法想象的","They suffered an unimaginable loss.","他们承受了难以想象的丧子之痛。"],
+["forgive","/fərˈɡɪv/","原谅","In the end, Eliza forgave him.","最终伊丽莎原谅了他。"],
+["fire into the air","/ˈfaɪər ˌɪntu ði ˈer/","朝天开枪","In a duel, some men chose to fire into the air.","决斗中，有人选择朝天开枪。","决斗中故意不瞄准对方，叫 throw away one's shot。"]
+]},
+{ id:"b6", zh:"1800 年大选 · 决斗", en:"The Election of 1800 · The World Was Wide Enough", when:"第二幕 · 1800–1804", band:"trop", range:null, words:[
+["obfuscate","/ˈɑːbfəskeɪt/","故意混淆","Politicians often obfuscate the truth.","政客常常混淆真相。"],
+["endorsement","/ɪnˈdɔːrsmənt/","支持，背书","Hamilton's endorsement decided the election.","汉密尔顿的表态决定了选举结果。"],
+["defeatist","/dɪˈfiːtɪst/","失败主义的","Don't be so defeatist.","别那么悲观泄气。"],
+["elitist","/ɪˈliːtɪst/","精英主义的","Some called Hamilton an elitist.","有人说汉密尔顿是精英主义者。"],
+["landslide","/ˈlændslaɪd/","压倒性胜利；山崩","Jefferson won by a landslide.","杰斐逊以压倒性优势获胜。"],
+["whoreson","/ˈhɔːrsən/","狗娘养的（古语骂人话）","In old plays, whoreson was a common insult.","在旧戏剧里，whoreson 是常见骂人话。"],
+["toe the line","/ˌtoʊ ðə ˈlaɪn/","服从规矩","He refused to toe the party line.","他拒绝服从党的路线。"],
+["moral","/ˈmɔːrəl/","道德的；寓意","What's the moral of the story?","这个故事的寓意是什么？"],
+["equivocate","/ɪˈkwɪvəkeɪt/","含糊其辞","Burr accused him of equivocating.","伯尔指责他含糊其辞。"],
+["cite","/saɪt/","引用","He cited the newspaper as his source.","他引用报纸作为依据。"],
+["grievance","/ˈɡriːvəns/","不满，委屈","Burr listed his grievances in a letter.","伯尔在信中列出了他的不满。"],
+["itemize","/ˈaɪtəmaɪz/","逐条列出","Please itemize the charges.","请逐条列出费用。"],
+["intemperate","/ɪnˈtempərət/","过激的，不节制的","Hamilton's words were intemperate.","汉密尔顿的话太过激了。"],
+["obedient servant","/oʊˈbiːdiənt ˈsɜːrvənt/","您忠诚的仆人（旧时信末敬语）","Both men signed their letters, Your obedient servant.","两人信末都签着「您忠实的仆人」。","《Your Obedient Servant》讽刺的就是这种礼貌。"],
+["marksman","/ˈmɑːrksmən/","神枪手","Burr was not a great marksman.","伯尔并不是神枪手。"],
+["rigor","/ˈrɪɡər/","严谨","He studied with great rigor.","他学习非常严谨。"],
+["methodical","/məˈθɑːdɪkəl/","有条理的","Burr was calm and methodical.","伯尔冷静而有条理。"],
+["slaughter","/ˈslɔːtər/","屠杀","The battle turned into a slaughter.","战斗变成了屠杀。"],
+["symphony","/ˈsɪmfəni/","交响乐","He imagined his legacy as a symphony.","他把自己的遗产想象成一首交响乐。"],
+["usher","/ˈʌʃər/","引领，开启","The election ushered in a new era.","这次选举开启了新时代。"],
+["wailing","/ˈweɪlɪŋ/","哀号","The wailing of the family filled the house.","家人的哀号声充满了屋子。"],
+["obliterate","/əˈblɪtəreɪt/","彻底摧毁","The bullet obliterated his future.","这颗子弹毁掉了他的未来。"],
+["Weehawken","/wiːˈhɔːkən/","威霍肯（新泽西决斗地）","The duel took place in Weehawken, New Jersey.","决斗发生在新泽西的威霍肯。","离你住的 North Bergen 只有几公里！","n"],
+["villain","/ˈvɪlən/","反派，恶人","Burr says history remembers him as the villain.","伯尔说历史把他记成了反派。"],
+["wide enough","/ˈwaɪd ɪˈnʌf/","足够宽广","Burr realized the world was wide enough for both of them.","伯尔意识到这世界本可容下他们两人。","《The World Was Wide Enough》。"],
+["tie","/taɪ/","平局，票数相同","The election of 1800 ended in a tie between Jefferson and Burr.","1800 年大选杰斐逊和伯尔票数打平。"]
+]},
+{ id:"b7", zh:"终曲 · 谁讲你的故事", en:"Who Lives, Who Dies, Who Tells Your Story", when:"第二幕 · 终曲", band:"trop", range:null, words:[
+["prosperity","/prɑːˈsperəti/","繁荣","His financial system brought prosperity.","他的金融体系带来了繁荣。"],
+["orphanage","/ˈɔːrfənɪdʒ/","孤儿院","Eliza founded the first private orphanage in New York.","伊丽莎创办了纽约第一家私立孤儿院。"],
+["abolition","/ˌæbəˈlɪʃən/","废除（奴隶制）","Eliza spoke out for abolition.","伊丽莎公开支持废奴。"],
+["Washington Monument","/ˈwɑːʃɪŋtən ˈmɑːnjəmənt/","华盛顿纪念碑","Eliza helped raise funds for the Washington Monument.","伊丽莎帮忙为华盛顿纪念碑募款。","","n"],
+["interview","/ˈɪntərvjuː/","采访","She interviewed soldiers who fought with him.","她采访了和他并肩作战的士兵。"],
+["widow","/ˈwɪdoʊ/","寡妇","Eliza lived fifty years as a widow.","伊丽莎守寡五十年。"],
+["outlast","/ˌaʊtˈlæst/","比……持久","Her work outlasted all of them.","她的事业比他们所有人都长久。"],
+["tell your story","/ˌtel jʊr ˈstɔːri/","讲述你的故事","Eliza made sure someone would tell your story, Alexander.","伊丽莎确保有人来讲述汉密尔顿的故事。","全剧结尾的核心问题。"],
+["gasp","/ɡæsp/","倒吸一口气","The final gasp from Eliza is still debated.","伊丽莎最后那一声倒吸气至今仍有争议。","全剧最后一个声音，看时留意。"]
+]},
+{ id:"names", zh:"人物与地名", en:"Who's Who", when:"看戏前先认人", band:"polar", range:null, words:[
+["Alexander Hamilton","/ˌælɪɡˈzændər ˈhæməltən/","亚历山大·汉密尔顿","Alexander Hamilton was the first Secretary of the Treasury.","汉密尔顿是美国第一任财政部长。","","n"],
+["Aaron Burr","/ˈɛrən ˈbɜːr/","亚伦·伯尔（叙述者）","Aaron Burr narrates the story and shoots Hamilton.","伯尔是叙述者，也是射杀汉密尔顿的人。","","n"],
+["Eliza Schuyler","/ɪˈlaɪzə ˈskaɪlər/","伊丽莎·舒勒（妻子）","Eliza Schuyler became Hamilton's wife.","伊丽莎·舒勒成为汉密尔顿的妻子。","Schuyler 读「SKY-ler」！","n"],
+["Angelica Schuyler","/ænˈdʒelɪkə ˈskaɪlər/","安吉莉卡·舒勒（大姐）","Angelica was the oldest and smartest sister.","安吉莉卡是最年长也最聪明的姐姐。","","n"],
+["Peggy","/ˈpeɡi/","佩吉（三妹）","Peggy is the youngest Schuyler sister.","佩吉是舒勒家最小的妹妹。","同一演员第二幕演玛丽亚·雷诺兹。","n"],
+["Marquis de Lafayette","/mɑːrˈkiː də ˌlæfiˈet/","拉法耶特侯爵","Lafayette came from France to help the Americans.","拉法耶特从法国来帮助美国人。","同一演员第二幕演杰斐逊。","n"],
+["Hercules Mulligan","/ˈhɜːrkjəliːz ˈmʌlɪɡən/","赫拉克勒斯·马利根","Hercules Mulligan was a tailor and a spy.","马利根是裁缝也是间谍。","同一演员第二幕演麦迪逊。","n"],
+["John Laurens","/dʒɑːn ˈlɔːrənz/","约翰·劳伦斯","John Laurens was Hamilton's closest friend.","约翰·劳伦斯是汉密尔顿最亲密的朋友。","同一演员第二幕演菲利普。","n"],
+["George Washington","/dʒɔːrdʒ ˈwɑːʃɪŋtən/","乔治·华盛顿","George Washington led the army and became the first president.","华盛顿率领军队，后成为首任总统。","","n"],
+["King George III","/ˈkɪŋ ˈdʒɔːrdʒ ðə ˈθɜːrd/","英王乔治三世","King George III sings three comic songs.","乔治三世唱了三首搞笑歌。","III 读作 the Third。","n"],
+["Thomas Jefferson","/ˈtɑːməs ˈdʒefərsən/","托马斯·杰斐逊","Thomas Jefferson returns from France in Act Two.","杰斐逊在第二幕从法国归来。","","n"],
+["James Madison","/dʒeɪmz ˈmædɪsən/","詹姆斯·麦迪逊","James Madison helped write The Federalist Papers.","麦迪逊参与写了《联邦党人文集》。","","n"],
+["John Adams","/dʒɑːn ˈædəmz/","约翰·亚当斯","John Adams became the second president.","亚当斯成了第二任总统。","剧中从未露面，只被提到。","n"],
+["Philip Hamilton","/ˈfɪlɪp ˈhæməltən/","菲利普·汉密尔顿（长子）","Philip Hamilton died in a duel at nineteen.","菲利普 19 岁死于决斗。","","n"],
+["Maria Reynolds","/məˈriːə ˈrenəldz/","玛丽亚·雷诺兹","Maria Reynolds had an affair with Hamilton.","玛丽亚·雷诺兹与汉密尔顿有私情。","","n"],
+["Samuel Seabury","/ˈsæmjuəl ˈsiːberi/","塞缪尔·西伯里","Samuel Seabury was a loyalist bishop.","西伯里是效忠派主教。","","n"],
+["Charles Lee","/tʃɑːrlz ˈliː/","查尔斯·李","General Charles Lee retreated at Monmouth.","查尔斯·李将军在蒙茅斯撤退。","","n"],
+["Theodosia","/ˌθiːəˈdoʊʃə/","西奥多西娅（伯尔之女）","Burr named his daughter Theodosia.","伯尔给女儿取名西奥多西娅。","","n"],
+["George Eacker","/dʒɔːrdʒ ˈekər/","乔治·埃克","George Eacker shot Philip in a duel.","乔治·埃克在决斗中射杀了菲利普。","","n"],
+["Nevis","/ˈniːvɪs/","尼维斯岛","Hamilton was born on Nevis.","汉密尔顿出生在尼维斯岛。","","n"],
+["St. Croix","/seɪnt ˈkrɔɪ/","圣克罗伊岛","He grew up on St. Croix.","他在圣克罗伊岛长大。","x 不发音。","n"],
+["King's College","/ˈkɪŋz ˈkɑːlɪdʒ/","国王学院（今哥伦比亚大学）","Hamilton studied at King's College, today's Columbia.","汉密尔顿在国王学院念书，即今天的哥伦比亚大学。","","n"],
+["Princeton","/ˈprɪnstən/","普林斯顿","Burr graduated from Princeton.","伯尔毕业于普林斯顿。","","n"],
+["Yorktown","/ˈjɔːrktaʊn/","约克镇","The last big battle was at Yorktown in 1781.","最后一场大战 1781 年在约克镇。","","n"],
+["Monticello","/ˌmɑːntɪˈtʃeloʊ/","蒙蒂塞洛（杰斐逊庄园）","Jefferson's home was Monticello.","杰斐逊的家是蒙蒂塞洛庄园。","c 读 ch。","n"],
+["Mount Vernon","/ˌmaʊnt ˈvɜːrnən/","弗农山庄（华盛顿故居）","Washington retired to Mount Vernon.","华盛顿退休回到弗农山庄。","","n"],
+["Albany","/ˈɔːlbəni/","奥尔巴尼","The Schuyler family lived in Albany.","舒勒家住在奥尔巴尼。","","n"]
+]},
+{ id:"history", zh:"历史与政治术语", en:"History & Politics", when:"看懂剧情的背景", band:"polar", range:null, words:[
+["colony","/ˈkɑːləni/","殖民地","There were thirteen colonies.","当时有十三个殖民地。"],
+["taxation without representation","/tækˈseɪʃən wɪˈðaʊt ˌreprɪzenˈteɪʃən/","无代表不纳税","The colonists protested taxation without representation.","殖民者抗议「无代表不纳税」。"],
+["Revolutionary War","/ˌrevəˈluːʃəneri ˈwɔːr/","独立战争","The Revolutionary War lasted from 1775 to 1783.","独立战争从 1775 打到 1783 年。","","n"],
+["Continental Army","/ˌkɑːntɪˈnentəl ˈɑːrmi/","大陆军","Washington led the Continental Army.","华盛顿率领大陆军。","","n"],
+["Continental Congress","/ˌkɑːntɪˈnentəl ˈkɑːŋɡrəs/","大陆会议","The Continental Congress couldn't pay the soldiers.","大陆会议发不出军饷。","","n"],
+["Constitution","/ˌkɑːnstɪˈtuːʃən/","宪法","Hamilton fought to ratify the Constitution.","汉密尔顿为批准宪法而奋斗。","","n"],
+["ratify","/ˈrætɪfaɪ/","批准（条约、宪法）","Nine states needed to ratify it.","需要九个州批准。"],
+["The Federalist Papers","/ðə ˈfedərəlɪst ˈpeɪpərz/","《联邦党人文集》","The Federalist Papers defended the Constitution.","《联邦党人文集》为宪法辩护。","","n"],
+["Federalist","/ˈfedərəlɪst/","联邦党人","Hamilton led the Federalists.","汉密尔顿领导联邦党。"],
+["Democratic-Republican","/ˌdeməˈkrætɪk rɪˈpʌblɪkən/","民主共和党人","Jefferson and Madison were Democratic-Republicans.","杰斐逊和麦迪逊属于民主共和党。"],
+["Secretary of the Treasury","/ˈsekrəteri əv ðə ˈtreʒəri/","财政部长","Washington named Hamilton Secretary of the Treasury.","华盛顿任命汉密尔顿为财政部长。"],
+["Secretary of State","/ˈsekrəteri əv ˈsteɪt/","国务卿","Jefferson was the first Secretary of State.","杰斐逊是第一任国务卿。"],
+["national debt","/ˈnæʃənəl ˈdet/","国债","The war left a huge national debt.","战争留下巨额国债。","debt 的 b 不发音。"],
+["national bank","/ˈnæʃənəl ˈbæŋk/","国家银行","Hamilton created the first national bank.","汉密尔顿创建了第一家国家银行。"],
+["federal","/ˈfedərəl/","联邦的","He wanted a strong federal government.","他想要一个强大的联邦政府。"],
+["states' rights","/ˌsteɪts ˈraɪts/","州权","Jefferson defended states' rights.","杰斐逊捍卫州权。"],
+["Electoral College","/ɪˈlektərəl ˈkɑːlɪdʒ/","选举人团","The Electoral College chooses the president.","选举人团选出总统。","","n"],
+["Vice President","/ˌvaɪs ˈprezɪdənt/","副总统","Burr became Vice President in 1801.","伯尔 1801 年当上副总统。"],
+["Congress","/ˈkɑːŋɡrəs/","国会","Congress debated his financial plan.","国会辩论他的财政计划。"],
+["Loyalist","/ˈlɔɪəlɪst/","效忠派","Loyalists stayed loyal to the King.","效忠派对国王保持忠诚。"],
+["Patriot","/ˈpeɪtriət/","爱国者（独立派）","The Patriots wanted independence.","爱国者一派要独立。"],
+["ten-dollar bill","/ˌten ˌdɑːlər ˈbɪl/","十美元钞票","Look for Hamilton on the ten-dollar bill.","在十美元钞票上找汉密尔顿。","看剧那天拿一张出来看看！"]
+]},
+{ id:"stage", zh:"嘻哈与剧场", en:"Hip-hop & Theater", when:"11/14 剧院里用得上", band:"polar", range:null, words:[
+["Lin-Manuel Miranda","/ˌlɪn mænˈwel mɪˈrændə/","林-曼努尔·米兰达","Lin-Manuel Miranda wrote the music, lyrics and book.","米兰达包办了音乐、歌词和剧本。","","n"],
+["Ron Chernow","/ˌrɑːn ˈtʃɜːrnoʊ/","罗恩·切尔诺","The musical is based on Ron Chernow's biography.","这部音乐剧改编自切尔诺写的传记。","","n"],
+["hip-hop","/ˈhɪp hɑːp/","嘻哈","The founders tell their story through hip-hop.","开国元勋用嘻哈讲述自己的故事。"],
+["rap battle","/ˈræp ˌbætəl/","说唱对决","The cabinet meetings are staged as rap battles.","内阁会议被演成说唱对决。"],
+["rhyme","/raɪm/","押韵","Listen for the internal rhymes.","留意句中的押韵。"],
+["flow","/floʊ/","（说唱的）节奏与韵律","Jefferson's flow is slower and jazzier.","杰斐逊的说唱节奏更慢、更爵士。"],
+["mic drop","/ˈmaɪk ˌdrɑːp/","扔麦（表示赢了）","He ends his argument with a mic drop.","他扔下麦克风结束辩论。"],
+["sung-through","/ˈsʌŋ θruː/","全程演唱的","Hamilton is almost entirely sung-through.","《汉密尔顿》几乎全程都是唱的。"],
+["ensemble","/ɑːnˈsɑːmbəl/","合唱群演","The ensemble plays soldiers, guests and townspeople.","群演扮演士兵、宾客和市民。"],
+["cast","/kæst/","全体演员","The cast is mostly actors of color.","演员大多是有色人种。"],
+["understudy","/ˈʌndərstʌdi/","替补演员","Tonight an understudy is playing Hamilton.","今晚由替补演员演汉密尔顿。","入场时看 Playbill 里夹的小纸条。"],
+["number","/ˈnʌmbər/","（演出中的）一首曲目","My favorite number is The Room Where It Happens.","我最喜欢的曲目是《The Room Where It Happens》。"],
+["reprise","/rɪˈpriːz/","（歌曲）再现","Stay Alive comes back as a reprise in Act Two.","《Stay Alive》在第二幕再现。"],
+["ballad","/ˈbæləd/","抒情歌","Dear Theodosia is a gentle ballad.","《Dear Theodosia》是一首温柔的抒情歌。"],
+["Act One","/ˌækt ˈwʌn/","第一幕","Act One ends with Non-Stop.","第一幕以《Non-Stop》结束。"],
+["revolve","/rɪˈvɑːlv/","（舞台）转台","Watch the turntable revolve during the duel.","决斗时留意舞台转台的旋转。"],
+["turntable","/ˈtɜːrnteɪbəl/","旋转舞台","The stage has two rings of turntables.","舞台上有内外两圈转台。"],
+["Tony Award","/ˈtoʊni əˈwɔːrd/","托尼奖","Hamilton won eleven Tony Awards.","《汉密尔顿》拿了 11 座托尼奖。","","n"],
+["Pulitzer Prize","/ˈpʊlɪtsər ˈpraɪz/","普利策奖","It also won the Pulitzer Prize for Drama.","它还获得了普利策戏剧奖。","","n"],
+["lottery","/ˈlɑːtəri/","抽签（抽低价票）","You can enter the lottery for ten-dollar tickets.","可以参加抽签抢十美元的票。","10 美元票正好印着汉密尔顿。"],
+["curtain call","/ˈkɜːrtən ˌkɔːl/","谢幕","Don't leave before the curtain call.","谢幕前别走。"],
+["merch","/mɜːrtʃ/","周边商品","The merch stand is in the lobby.","周边摊在大堂。","merchandise 的缩写。"]
+]}
+];
+
+</script>
+<script>
+(function(){
+const TRIP_START="2026-10-21", TRIP_END="2026-11-21";
+const LANG={"n:es":["es-ES","西语"],"n:pt":["pt-BR","葡语"],"n:fr":["fr-FR","法语"]};
+const SAY={"King George III":"King George the Third","St. Croix":"Saint Croy","Eliza Schuyler":"Eliza Skyler","Angelica Schuyler":"Angelica Skyler","Marquis de Lafayette":"Marquee de Lafayette","in loco parentis":"in loh-ko pa-rentis","9/11 Memorial":"nine eleven Memorial","76ers":"seventy-sixers","30th Street Station":"thirtieth Street Station","OMNY":"omni","IAATO":"eye ah toe","MoMA":"moma","PIN":"pin","WEGO":"we go","Warner Bros. Studio Tour":"Warner Brothers Studio Tour","MEP rate":"M E P rate","ATM fee":"A T M fee","TCL Chinese Theatre":"T C L Chinese Theatre","UP Express":"U P Express","SEPTA":"septa","NJ Transit":"N J Transit","HX Hurtigruten Expeditions":"H X Hurtigruten Expeditions","MS Fridtjof Nansen":"M S Fritt-yof Nansen","Tom Bradley International Terminal":"Tom Bradley International Terminal"};
+
+/* ---------- 数据 ---------- */
+const ALL=[];
+CHAPTERS.forEach(c=>{c.items=c.words.map(a=>{const it={id:c.id+"|"+a[0],ch:c,w:a[0],ipa:a[1],zh:a[2],ex:a[3],exZh:a[4],tip:a[5]||"",kind:a[6]||""};ALL.push(it);return it;});});
+const BYID=Object.fromEntries(ALL.map(x=>[x.id,x]));
+
+/* ---------- 状态 ---------- */
+const store={get(k,d){try{const v=localStorage.getItem("hw:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("hw:"+k,JSON.stringify(v))}catch(e){}}};
+let prog=store.get("prog",{m:{},t:0});            // m: 已记住的词 id
+const ui=Object.assign({ch:null,mode:"list",filter:"all",q:"",dir:"en",auto:true,quizAudio:false},store.get("ui",{}));
+ui.q="";
+const isDone=id=>!!prog.m[id];
+function setDone(id,v){if(v)prog.m[id]=1;else delete prog.m[id];prog.t=Date.now();store.set("prog",prog);queueRemote();renderMeter();renderRail();}
+function saveUI(){store.set("ui",{ch:ui.ch,mode:ui.mode,filter:ui.filter,dir:ui.dir,auto:ui.auto,quizAudio:ui.quizAudio});}
+
+/* ---------- 跨设备同步（Claude 账户） ---------- */
+let remote=null,remoteTimer=null;
+const syncEl=document.getElementById("sync");
+function queueRemote(){if(!remote)return;clearTimeout(remoteTimer);remoteTimer=setTimeout(async()=>{try{await remote.set({m:Object.keys(prog.m),t:prog.t});syncEl.textContent="已同步到你的账户";}catch(e){syncEl.textContent="同步暂时失败，进度已存在本机";}},1200);}
+async function initRemote(){
+  try{
+    if(!window.claude||!window.claude.use)return;
+    const [user,db]=await Promise.all([window.claude.use("user"),window.claude.use("db")]);
+    if(!user||!db)return;
+    const uid=await user.id(); if(!uid)return;
+    remote=db.doc("data/users/"+uid+"/progress");
+    const snap=await remote.get();
+    const d=snap.exists?snap.data():null;
+    if(d&&Array.isArray(d.m)&&(d.t||0)>(prog.t||0)){prog={m:Object.fromEntries(d.m.filter(id=>BYID[id]).map(id=>[id,1])),t:d.t};store.set("prog",prog);renderAll();}
+    else if(prog.t&&(!d||(d.t||0)<prog.t)){queueRemote();}
+    syncEl.textContent="进度跟随你的 Claude 账户，手机电脑通用";
+  }catch(e){syncEl.textContent="";}
+}
+
+/* ---------- 发音 ---------- */
+const canSpeak="speechSynthesis" in window;
+let voices=[];
+function loadVoices(){try{voices=speechSynthesis.getVoices()}catch(e){}}
+if(canSpeak){loadVoices();try{speechSynthesis.onvoiceschanged=loadVoices}catch(e){}}
+function pickVoice(lang){
+  const norm=v=>v.lang.replace("_","-");
+  const exact=voices.filter(v=>norm(v)===lang);
+  const pref=exact.find(v=>/Samantha|Google US|Ava|Allison|Luciana|Monica|Paulina|Thomas|Amélie/i.test(v.name));
+  return pref||exact[0]||voices.find(v=>norm(v).startsWith(lang.slice(0,2)));
+}
+function speak(text,lang,rate){
+  if(!canSpeak)return;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang=lang||"en-US"; u.rate=rate||0.92;
+    const v=pickVoice(u.lang); if(v)u.voice=v;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+const langOf=it=>(LANG[it.kind]||["en-US"])[0];
+const sayWord=(it,slow)=>speak(SAY[it.w]||it.w,langOf(it),slow?0.55:0.9);
+const sayEx=it=>speak(it.ex,"en-US",0.9);
+const ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+
+/* ---------- 工具 ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function highlight(ex,w){
+  const base=w.replace(/\s*\(.*?\)/g,"").replace(/^(the|a|an)\s+/i,"");
+  const parts=base.split(/[\s-]+/).filter(Boolean).map(p=>{let s=p.replace(/[.']/g,"");if(s.length>5)s=s.slice(0,-2);return s.replace(/[.*+?^${}()|[\]\\\/]/g,"\\$&")+"[\\w'’.]*";});
+  const safe=esc(ex);
+  if(!parts.length)return safe;
+  try{const re=new RegExp("("+parts.join("[\\s-]+")+")","i");return safe.replace(re,"<mark>$1</mark>");}catch(e){return safe;}
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const TODAY=ymd(new Date());
+const dayDiff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
+function ranges(c){if(!c.range)return[];return Array.isArray(c.range[0])?c.range:[c.range];}
+const isToday=c=>ranges(c).some(([s,e])=>TODAY>=s&&TODAY<=e);
+function nextStop(){let best=null;CHAPTERS.forEach(c=>ranges(c).forEach(([s])=>{if(s>TODAY&&(!best||s<best.s))best={c,s};}));return best;}
+const scopeItems=()=>ui.ch==="all"?ALL:(CHAPTERS.find(c=>c.id===ui.ch)||CHAPTERS[0]).items;
+
+/* ---------- 头部 ---------- */
+document.getElementById("route").innerHTML=BOOK.route;document.getElementById("foot").textContent=BOOK.footer;
+function renderToday(){
+  const el=$("#today"); const n=dayDiff(TODAY,BOOK.target);
+  el.innerHTML=n>0?"<strong>距"+BOOK.targetLabel+"还有 "+n+" 天</strong> · "+CHAPTERS.length+" 个场景，每天背一个":n===0?"<strong>今天就是"+BOOK.targetLabel+"日！</strong> · 进场前再过一遍人物与地名":"<strong>已经看过啦</strong> · 回味一下剧情吧";
+}
+function renderMeter(){const n=ALL.filter(x=>isDone(x.id)).length;$("#mcount").textContent="已记住 "+n+" / "+ALL.length;$("#mbar").style.width=(n/ALL.length*100).toFixed(1)+"%";}
+function renderRail(){
+  const ns=nextStop();
+  const chips=[{id:"all",zh:"全部",when:CHAPTERS.length+" 个场景",band:"all",items:ALL}].concat(CHAPTERS);
+  $("#rail").innerHTML=chips.map(c=>{
+    const done=c.items.filter(x=>isDone(x.id)).length;
+    let badge="";
+    if(c.range&&isToday(c))badge='<span class="badge">今天</span>';
+    else if(ns&&ns.c===c&&TODAY>=TRIP_START)badge='<span class="badge">下一站</span>';
+    return '<button class="chip" data-ch="'+c.id+'" data-band="'+c.band+'" aria-pressed="'+(ui.ch===c.id)+'">'+badge+'<span class="n">'+esc(c.zh)+'</span><span class="d">'+esc(c.when)+'</span><span class="p">'+done+" / "+c.items.length+"</span></button>";
+  }).join("");
+}
+$("#rail").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;ui.ch=b.dataset.ch;saveUI();resetSessions();renderRail();renderMain();window.scrollTo({top:0,behavior:"smooth"});});
+$("#tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-mode]");if(!b)return;ui.mode=b.dataset.mode;saveUI();resetSessions();renderTabs();renderMain();});
+function renderTabs(){document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.mode===ui.mode)));}
+
+function chHead(){
+  if(ui.ch==="all")return '<div class="ch-head"><h2>全部词汇</h2><span class="en">All scenes</span><span class="meta">'+ALL.length+' 词</span></div>';
+  const c=CHAPTERS.find(x=>x.id===ui.ch);
+  return '<div class="ch-head"><h2>'+esc(c.zh)+'</h2><span class="en">'+esc(c.en)+'</span><span class="meta">'+esc(c.when)+(c.lat?" · "+esc(c.lat):"")+" · "+c.items.length+" 词</span></div>";
+}
+
+/* ---------- 单词表 ---------- */
+function cardHTML(it){
+  const loc=LANG[it.kind];
+  const tag=loc?'<span class="tag loc">'+loc[1]+'</span>':(it.kind?'<span class="tag">专有名词</span>':"");
+  const sp=canSpeak?'<button class="say" data-say="w" aria-label="播放发音">'+ICON+'</button><button class="say slow" data-say="slow" aria-label="慢速播放">慢</button>':"";
+  return '<article class="card'+(isDone(it.id)?" done":"")+'" data-id="'+esc(it.id)+'">'+
+    '<div class="w-row"><span class="word">'+esc(it.w)+'</span>'+tag+'<button class="mark" data-mark aria-pressed="'+isDone(it.id)+'">'+(isDone(it.id)?"已记住":"记住了")+'</button></div>'+
+    '<div class="ipa-row"><span class="ipa">'+esc(it.ipa)+'</span>'+sp+'</div>'+
+    '<div class="zh">'+esc(it.zh)+'</div>'+
+    '<div class="ex">'+(canSpeak?'<button class="say" data-say="ex" aria-label="播放例句">'+ICON+'</button>':"")+'<span>'+highlight(it.ex,it.w)+'</span></div>'+
+    '<div class="exzh">'+esc(it.exZh)+'</div>'+
+    (it.tip?'<div class="tip"><b>记忆</b>'+esc(it.tip)+'</div>':"")+
+  '</article>';
+}
+function listItems(){
+  const q=ui.q.trim().toLowerCase();
+  let items=q?ALL:scopeItems();
+  if(q)items=items.filter(x=>(x.w+" "+x.zh+" "+x.ex).toLowerCase().includes(q));
+  if(ui.filter==="todo")items=items.filter(x=>!isDone(x.id));
+  else if(ui.filter==="done")items=items.filter(x=>isDone(x.id));
+  else if(ui.filter==="name")items=items.filter(x=>x.kind);
+  return items;
+}
+function renderList(){
+  const m=$("#main");
+  m.innerHTML=chHead()+
+    '<div class="tools"><input class="search" id="search" type="search" placeholder="搜索全部词汇：英文、中文或例句" value="'+esc(ui.q)+'">'+
+    '<div class="seg" id="filter">'+[["all","全部"],["todo","没记住"],["done","已记住"],["name","专有名词"]].map(([k,l])=>'<button data-f="'+k+'" aria-pressed="'+(ui.filter===k)+'">'+l+"</button>").join("")+"</div></div>"+
+    '<div class="grid" id="grid"></div>';
+  fillGrid();
+  $("#search").addEventListener("input",e=>{ui.q=e.target.value;fillGrid();});
+  $("#filter").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;ui.filter=b.dataset.f;saveUI();document.querySelectorAll("#filter button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));fillGrid();});
+}
+function fillGrid(){
+  const items=listItems();
+  $("#grid").innerHTML=items.length?items.map(cardHTML).join(""):'<div class="empty">'+(ui.filter==="todo"?"这一组全部记住了，可以换个场景或做个测验。":"没有找到匹配的词。")+"</div>";
+}
+document.addEventListener("click",e=>{
+  const card=e.target.closest(".card"); if(!card)return;
+  const it=BYID[card.dataset.id]; if(!it)return;
+  const s=e.target.closest("[data-say]");
+  if(s){const k=s.dataset.say;if(k==="ex")sayEx(it);else sayWord(it,k==="slow");return;}
+  if(e.target.closest("[data-mark]")){
+    const v=!isDone(it.id);setDone(it.id,v);
+    card.classList.toggle("done",v);const b=card.querySelector("[data-mark]");b.setAttribute("aria-pressed",String(v));b.textContent=v?"已记住":"记住了";
+    if(ui.filter==="todo"&&v){setTimeout(()=>{if(card.isConnected){card.remove();if(!$("#grid").children.length)fillGrid();}},450);}
+  }
+});
+
+/* ---------- 闪卡 ---------- */
+let fs=null;
+function newFlash(){const pool=scopeItems().filter(x=>!isDone(x.id));fs={deck:shuffle(pool.length?pool:scopeItems()),i:0,flipped:false,known:0,total:0,allDone:!pool.length};fs.total=fs.deck.length;}
+function renderFlash(){
+  if(!fs)newFlash();
+  const m=$("#main");
+  const it=fs.deck[0];
+  const opts='<div class="opts"><div class="seg" id="dir"><button data-d="en" aria-pressed="'+(ui.dir==="en")+'">看英文想中文</button><button data-d="zh" aria-pressed="'+(ui.dir==="zh")+'">看中文想英文</button></div>'+
+    (canSpeak?'<div class="seg"><button id="auto" aria-pressed="'+ui.auto+'">自动发音</button></div>':"")+"</div>";
+  if(!it){
+    m.innerHTML=chHead()+'<div class="stage">'+opts+'<div class="flash" style="cursor:default"><div class="inner"><div class="bigzh">这一轮完成</div><div class="exzh">新记住 '+fs.known+" 个词。</div></div></div>"+
+      '<button class="btn primary" id="again">再来一轮</button></div>';
+    $("#again").onclick=()=>{newFlash();renderFlash();};bindFlashOpts();return;
+  }
+  const loc=LANG[it.kind];
+  const front=ui.dir==="en"
+    ?'<div class="big">'+esc(it.w)+'</div><div class="ipa">'+esc(it.ipa)+(loc?" · "+loc[1]:"")+"</div>"
+    :'<div class="bigzh">'+esc(it.zh)+'</div><div class="exzh">'+esc(it.exZh)+"</div>";
+  const back=ui.dir==="en"
+    ?'<div class="bigzh">'+esc(it.zh)+'</div><div class="ex"><span>'+highlight(it.ex,it.w)+'</span></div><div class="exzh">'+esc(it.exZh)+"</div>"
+    :'<div class="big">'+esc(it.w)+'</div><div class="ipa">'+esc(it.ipa)+'</div><div class="ex"><span>'+highlight(it.ex,it.w)+"</span></div>";
+  m.innerHTML=chHead()+'<div class="stage">'+opts+
+    '<div class="flash" id="card" role="button" tabindex="0" aria-label="点击翻面"><span class="count">'+(fs.total-fs.deck.length+1)+" / "+fs.total+(fs.allDone?" · 复习已记住":"")+'</span><div class="inner">'+front+(fs.flipped?'<div style="height:6px"></div>'+back+(it.tip?'<div class="tip"><b>记忆</b>'+esc(it.tip)+"</div>":""):"")+'</div><span class="hint">'+(fs.flipped?"":"点卡片翻面")+"</span></div>"+
+    (canSpeak?'<div class="opts"><button class="say" id="fsay" aria-label="播放发音">'+ICON+'</button><button class="say slow" id="fslow">慢</button><button class="say slow" id="fex">例句</button></div>':"")+
+    '<div class="actions"><button class="btn no" id="no">还不熟</button><button class="btn yes" id="yes">记住了</button></div>'+
+    '<div class="kbd">键盘：空格翻面 · ← 还不熟 · → 记住了</div></div>';
+  bindFlashOpts();
+  $("#card").onclick=()=>{fs.flipped=!fs.flipped;renderFlash();if(fs.flipped&&ui.dir==="zh"&&ui.auto)sayWord(it);};
+  if(canSpeak){$("#fsay").onclick=()=>sayWord(it);$("#fslow").onclick=()=>sayWord(it,true);$("#fex").onclick=()=>sayEx(it);}
+  $("#no").onclick=()=>flashAnswer(false);$("#yes").onclick=()=>flashAnswer(true);
+  if(!fs.flipped&&ui.dir==="en"&&ui.auto&&!fs.spoke){fs.spoke=true;sayWord(it);}
+}
+function bindFlashOpts(){
+  const d=$("#dir");if(d)d.onclick=e=>{const b=e.target.closest("button");if(!b)return;ui.dir=b.dataset.d;saveUI();fs.flipped=false;fs.spoke=false;renderFlash();};
+  const a=$("#auto");if(a)a.onclick=()=>{ui.auto=!ui.auto;saveUI();a.setAttribute("aria-pressed",String(ui.auto));};
+}
+function flashAnswer(ok){
+  const it=fs.deck.shift(); if(!it)return;
+  if(ok){if(!isDone(it.id)){setDone(it.id,true);fs.known++;}}
+  else{if(isDone(it.id))setDone(it.id,false);fs.deck.splice(Math.min(fs.deck.length,3+Math.floor(Math.random()*3)),0,it);fs.total++;}
+  fs.flipped=false;fs.spoke=false;renderFlash();
+}
+document.addEventListener("keydown",e=>{
+  if(ui.mode!=="flash"||!fs||e.target.tagName==="INPUT")return;
+  if(e.key===" "){e.preventDefault();const c=$("#card");if(c)c.click();}
+  else if(e.key==="ArrowRight"&&$("#yes"))flashAnswer(true);
+  else if(e.key==="ArrowLeft"&&$("#no"))flashAnswer(false);
+});
+
+/* ---------- 测验 ---------- */
+let qs=null;
+function newQuiz(){
+  const pool=scopeItems();
+  const todo=shuffle(pool.filter(x=>!isDone(x.id))),done=shuffle(pool.filter(x=>isDone(x.id)));
+  const qsItems=todo.concat(done).slice(0,Math.min(10,pool.length));
+  qs={list:shuffle(qsItems),i:0,score:0,missed:[],answered:null};
+  qs.list.forEach(it=>{
+    const same=shuffle(pool.filter(x=>x!==it&&x.zh!==it.zh));
+    const others=same.length>=3?same:same.concat(shuffle(ALL.filter(x=>x!==it&&!same.includes(x)&&x.zh!==it.zh)));
+    it._choices=shuffle([it].concat(others.slice(0,3)));
+  });
+}
+function renderQuiz(){
+  if(!qs)newQuiz();
+  const m=$("#main");
+  const opts='<div class="opts">'+(canSpeak?'<div class="seg"><button id="qa" aria-pressed="'+ui.quizAudio+'">听音选义（隐藏单词）</button></div>':"")+"</div>";
+  if(qs.i>=qs.list.length){
+    m.innerHTML=chHead()+'<div class="stage"><div class="result"><div class="exzh">本轮得分</div><div class="score">'+qs.score+" / "+qs.list.length+'</div><div class="exzh">'+(qs.missed.length?"答错的词已标为「没记住」，会优先出现在闪卡里。":"全对，这一组可以放心了。")+"</div>"+
+      (qs.missed.length?'<div class="missed">'+qs.missed.map(it=>'<div><span class="word">'+esc(it.w)+'</span> <span class="ipa">'+esc(it.ipa)+'</span><div>'+esc(it.zh)+"</div></div>").join("")+"</div>":"")+
+      '</div><button class="btn primary" id="again">再测一轮</button></div>';
+    $("#again").onclick=()=>{newQuiz();renderQuiz();};return;
+  }
+  const it=qs.list[qs.i];const hide=ui.quizAudio&&canSpeak&&qs.answered==null;
+  m.innerHTML=chHead()+'<div class="stage">'+opts+'<div class="q"><span class="count">第 '+(qs.i+1)+" / "+qs.list.length+" 题 · 得分 "+qs.score+"</span>"+
+    (hide?'<button class="btn primary" id="qplay" style="width:auto;padding:12px 22px">播放发音</button>':'<div class="big word" style="font-size:30px">'+esc(it.w)+'</div><div class="ipa">'+esc(it.ipa)+"</div>")+
+    (canSpeak&&!hide?'<button class="say" id="qplay" aria-label="播放发音">'+ICON+"</button>":"")+
+    "</div>"+'<div class="choices">'+it._choices.map((c,k)=>{let cls="choice";if(qs.answered!=null){if(c===it)cls+=" right";else if(k===qs.answered)cls+=" wrong";}return '<button class="'+cls+'" data-k="'+k+'"'+(qs.answered!=null?" disabled":"")+">"+esc(c.zh)+"</button>";}).join("")+"</div>"+
+    (qs.answered!=null?'<div class="feedback"><div><span class="word" style="font-size:18px">'+esc(it.w)+'</span> <span class="ipa">'+esc(it.ipa)+'</span></div><div class="ex"><span>'+highlight(it.ex,it.w)+'</span></div><div class="exzh">'+esc(it.exZh)+'</div></div><button class="btn primary" id="qnext">'+(qs.i+1<qs.list.length?"下一题":"看结果")+"</button>":"")+
+    "</div>";
+  const qa=$("#qa");if(qa)qa.onclick=()=>{ui.quizAudio=!ui.quizAudio;saveUI();renderQuiz();if(ui.quizAudio&&qs.answered==null)sayWord(it);};
+  const qp=$("#qplay");if(qp)qp.onclick=()=>sayWord(it);
+  document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+    if(qs.answered!=null)return;const k=+b.dataset.k;qs.answered=k;
+    if(it._choices[k]===it)qs.score++;else{qs.missed.push(it);if(isDone(it.id))setDone(it.id,false);}
+    renderQuiz();sayWord(it);
+  });
+  const nx=$("#qnext");if(nx)nx.onclick=()=>{qs.i++;qs.answered=null;renderQuiz();const n=qs.list[qs.i];if(n&&ui.quizAudio)sayWord(n);};
+  if(hide&&!qs.spoke){qs.spoke=qs.i+1;}
+}
+
+function resetSessions(){fs=null;qs=null;}
+function renderMain(){if(ui.mode==="flash")renderFlash();else if(ui.mode==="quiz")renderQuiz();else renderList();}
+function renderAll(){renderToday();renderMeter();renderRail();renderTabs();renderMain();}
+
+/* 默认打开今天所在的场景 */
+if(!ui.ch||(ui.ch!=="all"&&!CHAPTERS.find(c=>c.id===ui.ch))){
+  const tc=CHAPTERS.find(c=>c.range&&isToday(c));ui.ch=tc?tc.id:CHAPTERS[0].id;
+}
+renderAll();
+const active=document.querySelector('.chip[aria-pressed="true"]');if(active)active.scrollIntoView({block:"nearest",inline:"center"});
+setTimeout(initRemote,0);
+})();
+</script>
+
+</body>
+</html>
