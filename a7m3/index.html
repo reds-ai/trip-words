@@ -120,6 +120,16 @@ summary::after{content:"+";font-family:var(--f-mono);color:var(--accent)}
 details[open] summary::after{content:"−"}
 details ol,details ul{margin:0 0 12px;padding-left:20px;font-size:14.5px}
 
+
+/* 手把手步骤 */
+.howto{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.howto h3{margin:0 0 4px}
+.howto .why{color:var(--muted);font-size:14px;margin:0 0 8px}
+.steps{list-style:none;margin:0;padding:0;counter-reset:st;display:grid;gap:8px}
+.steps li{counter-increment:st;display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font-size:14.5px}
+.steps li::before{content:counter(st);display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--surface);font-family:var(--f-mono);font-size:13px;font-weight:600}
+kbd{font-family:var(--f-mono);font-size:12.5px;font-weight:600;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 6px;background:var(--sunk);white-space:nowrap}
+.map td:first-child,.map th{white-space:nowrap}.map td:first-child{font-weight:600}
 footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1px solid var(--line)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
@@ -142,7 +152,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
 </div>
 
 <nav class="toc"><div class="wrap"><div class="row" id="toc">
-  <a href="#keys">按键</a><a href="#setup">出发前设置</a><a href="#exposure">曝光</a><a href="#focus">对焦</a><a href="#scenes">行程场景</a><a href="#polar">南极专章</a><a href="#tricks">技巧</a><a href="#video">视频</a><a href="#trouble">出问题了</a><a href="#transfer">传照片</a>
+  <a href="#keys">按键</a><a href="#howto">怎么设置</a><a href="#setup">设置清单</a><a href="#exposure">曝光</a><a href="#focus">对焦</a><a href="#scenes">行程场景</a><a href="#polar">南极专章</a><a href="#tricks">技巧</a><a href="#video">视频</a><a href="#trouble">出问题了</a><a href="#transfer">传照片</a>
 </div></div></nav>
 
 <div class="wrap"><main>
@@ -167,7 +177,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
     <div class="key"><div class="k">MENU</div><p>进入完整菜单。菜单不能用手指点，只能用拨轮和摇杆操作。</p></div>
     <div class="key"><div class="k">C3 键 <i>可自定义</i></div><p>MENU 左边那个。可以留给「白平衡」。</p></div>
     <div class="key"><div class="k">MOVIE（红点）</div><p>任何模式下按一下就开始录像，再按停止。别误按。</p></div>
-    <div class="key"><div class="k">AF-ON</div><p>按住就对焦。配合「返回按钮对焦」拍动物非常好用，见第 04 章。</p></div>
+    <div class="key"><div class="k">AF-ON</div><p>按住就对焦。配合「返回按钮对焦」拍动物非常好用，见第 05 章。</p></div>
     <div class="key"><div class="k">AEL</div><p>锁定曝光。逆光拍人时先对着人按一下，再重新构图。</p></div>
     <div class="key"><div class="k">多功能选择器（摇杆）</div><p>移动对焦框。按下去对焦框回到中间。</p></div>
     <div class="key"><div class="k">Fn</div><p>快捷菜单，12 个常用设置一屏搞定。拍照时 90% 的调整都从这里来。</p></div>
@@ -199,16 +209,111 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
   </div>
 </section>
 
+<section id="howto">
+  <h2><span class="no">02</span>手把手：菜单和快捷键怎么设</h2>
+  <p class="sub">先学会这几种操作，后面所有设置都是同一个套路。按键名称：<kbd>MENU</kbd> 菜单键、<kbd>Fn</kbd> 功能键、<kbd>中央键</kbd> 控制拨轮中间那颗、<kbd>▲▼◀▶</kbd> 按控制拨轮的上下左右。</p>
+
+  <div class="howto">
+    <h3>① 菜单的基本操作</h3>
+    <p class="why">所有「MENU → … → …」的路径都这样走。</p>
+    <ol class="steps">
+      <li><span>按 <kbd>MENU</kbd>。屏幕最上面一排是标签：<b>拍摄设置1</b>（相机图标）、<b>拍摄设置2</b>、<b>网络</b>、<b>播放</b>、<b>设置</b>（工具箱图标）、<b>我的菜单</b>（星星）。每个标签下还分好几页，右上角显示页码，比如 3/14。</span></li>
+      <li><span>按 <kbd>◀</kbd><kbd>▶</kbd> 翻页、换标签；按 <kbd>▲</kbd><kbd>▼</kbd>（或转动控制拨轮）在一页里上下选项目。</span></li>
+      <li><span>选中项目后按 <kbd>中央键</kbd> 进入，再用 <kbd>▲</kbd><kbd>▼</kbd> 选选项，按 <kbd>中央键</kbd> 确认。</span></li>
+      <li><span>按 <kbd>MENU</kbd> 返回上一层；<b>半按快门</b> 直接退出菜单回到拍摄。</span></li>
+    </ol>
+    <div class="note tip"><b>找不到某项？</b>菜单项目很多，同一个标签要翻好几页。慢慢按 <kbd>▶</kbd> 一页页看标题，名称和这本说明书里写的一样。</div>
+  </div>
+
+  <div class="howto">
+    <h3>② 用 Fn 快捷菜单（每天最常用）</h3>
+    <p class="why">不进 MENU，一屏改 12 个常用设置。</p>
+    <ol class="steps">
+      <li><span>拍摄时按 <kbd>Fn</kbd>，屏幕下方出现两排共 12 个小图标。</span></li>
+      <li><span>用摇杆或 <kbd>▲▼◀▶</kbd> 移到想改的那格（比如「对焦模式」）。</span></li>
+      <li><span>直接<b>转前转盘或后转盘</b>就能改数值；想看完整选项就按 <kbd>中央键</kbd>。</span></li>
+      <li><span>改完<b>半按快门</b>，回到拍摄。</span></li>
+    </ol>
+  </div>
+
+  <div class="howto">
+    <h3>③ 把 Fn 菜单换成你常用的 12 项</h3>
+    <p class="why">出厂的 12 项不一定顺手，换成这一趟用得上的。</p>
+    <ol class="steps">
+      <li><span>按 <kbd>MENU</kbd> → 标签 <b>拍摄设置2</b> → 翻页找到 <b>功能菜单设置</b> → <kbd>中央键</kbd>。</span></li>
+      <li><span>屏幕上是 12 个格子（上排 1–6，下排 7–12）。选一个格子，按 <kbd>中央键</kbd>。</span></li>
+      <li><span>出现功能列表，选你要放进去的功能，按 <kbd>中央键</kbd> 确认。列表很长，要按 <kbd>◀</kbd><kbd>▶</kbd> 翻页。</span></li>
+      <li><span>重复，把 12 格都换好。按 <kbd>MENU</kbd> 退出。</span></li>
+    </ol>
+    <div class="tbl"><table class="map">
+      <tr><th>格子</th><th>建议放的功能</th></tr>
+      <tr><td>上排</td><td>拍摄模式（单拍/连拍）· 对焦模式 · 对焦区域 · 人脸/眼部AF设置 · 曝光补偿 · ISO</td></tr>
+      <tr><td>下排</td><td>测光模式 · 白平衡模式 · 创意风格 · 静音拍摄 · 文件格式 · 斑马线设定</td></tr>
+    </table></div>
+  </div>
+
+  <div class="howto">
+    <h3>④ 设置自定义键（C1 / C2 / C3 / C4）</h3>
+    <p class="why">把最常切换的功能放到实体按键上，戴手套也能一按就切。</p>
+    <ol class="steps">
+      <li><span>按 <kbd>MENU</kbd> → 标签 <b>拍摄设置2</b> → 找到 <b>自定义键（静止影像）</b> → <kbd>中央键</kbd>。</span></li>
+      <li><span>出现按键列表：自定义按钮1（就是 C1）、自定义按钮2（C2）、自定义按钮3（C3）、自定义按钮4（C4），下面还有 AF-ON、中央按钮、左/右/下按钮等。选 <b>自定义按钮1</b>，按 <kbd>中央键</kbd>。</span></li>
+      <li><span>在功能列表里找到 <b>APS-C/Super 35mm</b>（列表很长，用 <kbd>◀</kbd><kbd>▶</kbd> 翻页），按 <kbd>中央键</kbd> 确认。</span></li>
+      <li><span>回到按键列表，用同样方法设置其他键，按 <kbd>MENU</kbd> 退出。</span></li>
+      <li><span><b>试一下</b>：退出菜单后按 C1，画面应该放大一圈，屏幕上出现 APS-C 字样。再按一次恢复。</span></li>
+    </ol>
+    <div class="tbl"><table class="map">
+      <tr><th>按键</th><th>建议功能</th><th>为什么</th></tr>
+      <tr><td>C1</td><td>APS-C/Super 35mm</td><td>拍远处的企鹅、鲸鱼，一按放大 1.5 倍</td></tr>
+      <tr><td>C2</td><td>对焦区域</td><td>在「扩展自由点」和「区」之间快速切换</td></tr>
+      <tr><td>C3</td><td>白平衡模式</td><td>日落、雪地、室内灯光下快速改色温</td></tr>
+      <tr><td>C4</td><td>眼控AF</td><td>按住它强制找眼睛（人或动物）</td></tr>
+    </table></div>
+    <div class="note warn"><b>按错了别慌</b>同一个菜单里再改回来就好，自定义键不会影响照片和其他设置。</div>
+  </div>
+
+  <div class="howto">
+    <h3>⑤ 把整套设置存到模式旋钮的「1」</h3>
+    <p class="why">第 03 章的设置都做完以后再做这一步。以后被调乱了，转到 1 就恢复。</p>
+    <ol class="steps">
+      <li><span>先把模式旋钮转到你常用的档位（建议 <b>A</b>），把光圈、ISO、对焦等都调成想要的样子。</span></li>
+      <li><span>按 <kbd>MENU</kbd> → 标签 <b>拍摄设置1</b> → 找到 <b>存储</b> → <kbd>中央键</kbd>。</span></li>
+      <li><span>选编号 <b>1</b>，按 <kbd>中央键</kbd> 确认存好。</span></li>
+      <li><span><b>使用</b>：按住模式旋钮中间的锁定钮，转到「1」。屏幕会显示存好的设置，按 <kbd>中央键</kbd> 确认即可开拍。</span></li>
+      <li><span>想再存一套（比如南极动物：S 档、1/2000、连拍），就调好后存到 <b>2</b>。</span></li>
+    </ol>
+  </div>
+
+  <div class="howto">
+    <h3>⑥ 我的菜单：把常翻的项目收藏起来</h3>
+    <p class="why">像「间隔拍摄功能」「格式化」这种藏得深的，收藏到一页里。</p>
+    <ol class="steps">
+      <li><span>按 <kbd>MENU</kbd> → 最右边星星标签 <b>我的菜单</b> → <b>添加项目</b> → <kbd>中央键</kbd>。</span></li>
+      <li><span>在列表里找到要收藏的项目，按 <kbd>中央键</kbd>，再选放在哪个位置。</span></li>
+      <li><span>以后按 <kbd>MENU</kbd> 再按 <kbd>◀</kbd> 就能跳到我的菜单。</span></li>
+    </ol>
+    <p>建议收藏：间隔拍摄功能 · 格式化 · 静音拍摄 · 飞行模式 · 发送到智能手机 · 清洁模式。</p>
+  </div>
+
+  <div class="howto">
+    <h3>⑦ 格式化存储卡（每张新卡先做一次）</h3>
+    <ol class="steps">
+      <li><span>按 <kbd>MENU</kbd> → 标签 <b>设置</b> → <b>格式化</b> → 选卡槽 1 或 2 → <b>确定</b>。</span></li>
+      <li><span>格式化会<b>删掉卡里所有照片</b>，只对新卡或已经备份过的卡做。</span></li>
+    </ol>
+  </div>
+</section>
+
 <section id="setup">
-  <h2><span class="no">02</span>出发前一次设好</h2>
-  <p class="sub">在飞机上照着清单一条条设。打勾会保存在这台手机的浏览器里。</p>
+  <h2><span class="no">03</span>出发前一次设好</h2>
+  <p class="sub">在飞机上照着清单一条条设。不会操作菜单的话先看 <a href="#howto">第 02 章</a>。打勾会保存在这台手机的浏览器里。</p>
   <div class="progress" id="prog"></div>
   <div class="checks" id="checks"></div>
   <div class="note tip"><b>存成一键调出</b>设好后：MENU → <span class="path">拍摄设置1 → 存储</span> → 存到「1」。以后不管被谁乱调，转到模式旋钮的 1 就回来了。可以再按南极动物的设置存一套到「2」。</div>
 </section>
 
 <section id="exposure">
-  <h2><span class="no">03</span>曝光：三个数决定亮暗</h2>
+  <h2><span class="no">04</span>曝光：三个数决定亮暗</h2>
   <p class="sub">光圈、快门、ISO 共同决定一张照片多亮。每个数除了影响亮度，还各有一个副作用，这个副作用才是你选它的理由。</p>
   <div class="tri">
     <div><h4>光圈<span>f/2.8 … f/16</span></h4><p>镜头开的洞有多大。<b>数字越小，洞越大，越亮，背景越虚。</b></p><p>拍人想要背景虚化：开大（f/2.8–4）。拍风景要前后都清楚：缩小（f/8–11）。</p><div class="scale"><span>f/2.8 背景虚</span><span>f/8 全清楚</span></div></div>
@@ -231,7 +336,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
 </section>
 
 <section id="focus">
-  <h2><span class="no">04</span>对焦：让该清楚的地方清楚</h2>
+  <h2><span class="no">05</span>对焦：让该清楚的地方清楚</h2>
   <h3>对焦模式（在 Fn 菜单里）</h3>
   <div class="tbl"><table>
     <tr><th>模式</th><th>意思</th><th>什么时候用</th></tr>
@@ -267,7 +372,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
 </section>
 
 <section id="scenes">
-  <h2><span class="no">05</span>行程场景速查</h2>
+  <h2><span class="no">06</span>行程场景速查</h2>
   <p class="sub">按日期排。黑色标签是建议参数，橙色是曝光补偿。镜头光圈不够大时，用镜头的最大光圈即可。</p>
   <div class="filters" id="filters">
     <button aria-pressed="true" data-f="all">全部</button>
@@ -283,7 +388,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
 </section>
 
 <section id="polar">
-  <h2><span class="no">06</span>南极专章：保护相机和电池</h2>
+  <h2><span class="no">07</span>南极专章：保护相机和电池</h2>
   <p class="sub">−8 ℃、海水飞溅、强反光、一天 18 小时日照，再加上从冷甲板进到暖船舱。下面每一条都是为了不在最关键的时候掉链子。</p>
 
   <h3>电池</h3>
@@ -330,14 +435,14 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
 
   <h3>存储与备份</h3>
   <ul>
-    <li>双卡同时记录（见第 02 章），一张卡坏了还有另一张。</li>
+    <li>双卡同时记录（见第 03 章），一张卡坏了还有另一张。</li>
     <li>每天晚上把当天照片导到手机或电脑，船上网络很慢，别指望上传云端。</li>
     <li>一天可能拍上千张，带够卡：RAW 每张约 25–50 MB，128 GB 大约能放 2500–4000 张。</li>
   </ul>
 </section>
 
 <section id="tricks">
-  <h2><span class="no">07</span>让照片好看的技巧</h2>
+  <h2><span class="no">08</span>让照片好看的技巧</h2>
   <h3>构图</h3>
   <ul>
     <li><b>打开网格线</b>：<span class="path">拍摄设置2 → 网格线 → 三等分线</span>。把地平线放在上 1/3 或下 1/3，主体放在交叉点上。</li>
@@ -364,7 +469,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
 </section>
 
 <section id="video">
-  <h2><span class="no">08</span>视频：几个够用的设置</h2>
+  <h2><span class="no">09</span>视频：几个够用的设置</h2>
   <ul>
     <li>按红色 MOVIE 键就能录，不用转模式旋钮。</li>
     <li>画质：<span class="path">拍摄设置2 → 文件格式</span> 选 XAVC S 4K；<span class="path">记录设置</span> 选 30p（或 25p）。</li>
@@ -376,7 +481,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
 </section>
 
 <section id="trouble">
-  <h2><span class="no">09</span>出问题了怎么办</h2>
+  <h2><span class="no">10</span>出问题了怎么办</h2>
   <details><summary>按快门没反应</summary><ol>
     <li>看屏幕有没有提示「无存储卡」或「存储卡已满」。</li>
     <li>在 AF-S 下没对上焦时，相机可能不让拍。换 AF-C，或对着有反差的地方对焦。</li>
@@ -410,7 +515,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
     <li>功能互相冲突。比如开了静音拍摄就不能用闪光灯和 B 门；模式旋钮在 AUTO 时很多项都不能改。先转到 P/A/S/M。</li>
   </ul></details>
   <details><summary>被调乱了，想恢复</summary><ul>
-    <li>如果按第 02 章存过设置：直接把模式旋钮转到「1」。</li>
+    <li>如果按第 02 章 ⑤ 存过设置：直接把模式旋钮转到「1」。</li>
     <li>没存过：<span class="path">设置 → 出厂重置 → 相机设置重置</span>，只恢复拍摄设置，不删照片。<b>不要选「初始化」</b>。</li>
   </ul></details>
   <details><summary>取景器里看不清</summary><ul>
@@ -419,7 +524,7 @@ footer{color:var(--muted);font-size:12.5px;padding-block:10px 40px;border-top:1p
 </section>
 
 <section id="transfer">
-  <h2><span class="no">10</span>把照片传到手机</h2>
+  <h2><span class="no">11</span>把照片传到手机</h2>
   <ol>
     <li>手机装索尼官方 App：<b>Imaging Edge Mobile</b>（索尼较新的 App 叫 Creators' App，以应用商店里支持 ILCE-7M3 的那个为准）。</li>
     <li>相机上看照片时，<span class="path">网络 → 发送到智能手机</span>，选照片，用 App 扫屏幕上的二维码连接。</li>
@@ -455,11 +560,11 @@ const CHECKS=[
 ["关掉提示音","MENU → 音频信号 → 关（在拍摄设置2或设置标签里）","在船上、剧院、野生动物旁边都安静。"],
 ["打开网格线","拍摄设置2 → 网格线 → 三等分线","帮你放平地平线、摆好构图。"],
 ["打开斑马线","拍摄设置2 → 斑马线设定 → 开，等级 100+","过曝的地方出现斜条纹，雪地救命。"],
-["设置自定义键","拍摄设置2 → 自定义键","C1 → APS-C/Super 35mm；C2 → 对焦区域；其他按习惯。"],
-["整理 Fn 菜单","拍摄设置2 → 功能菜单设置","放进：对焦模式、对焦区域、ISO、白平衡、拍摄模式、静音拍摄、测光模式等。"],
+["设置自定义键","拍摄设置2 → 自定义键","C1 → APS-C/Super 35mm；C2 → 对焦区域。步骤见第 02 章 ④。"],
+["整理 Fn 菜单","拍摄设置2 → 功能菜单设置","放进：对焦模式、对焦区域、ISO、白平衡、拍摄模式、静音拍摄、测光模式等。步骤见第 02 章 ③。"],
 ["自动关机 1 分钟","设置 → 自动关机开始时间 → 1分钟","省电。半按快门立即唤醒。"],
 ["时区跟着走","设置 → 区域设置","每到一个新时区就改一下，照片时间和手机照片对得上，回家整理不会乱序。"],
-["存成「1」","拍摄设置1 → 存储 → 1","以上设好后存起来，被调乱了转到 1 就恢复。"]
+["存成「1」","拍摄设置1 → 存储 → 1","以上设好后存起来，被调乱了转到 1 就恢复。步骤见第 02 章 ⑤。"]
 ];
 let done=store.get("checks",{});
 function renderChecks(){
